@@ -67,6 +67,8 @@ enum ButtonFooter {
 #define kViewMatch				5
 #define kViewFrogGame			6
 #define kViewGame				7
+#define kViewSnake				8
+#define kViewHello				9
 
 #define kViewBackground			100
 #define kViewPanel				101

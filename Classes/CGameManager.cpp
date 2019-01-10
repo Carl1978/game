@@ -3,6 +3,8 @@
 #include "CGameManager.h"
 #include "Constants.h"
 #include "HelloWorldScene.h"
+#include "SnakeScene.h"
+#include "GameScene.h"
 
 USING_NS_CC;
 
@@ -48,9 +50,18 @@ void CGameManager::RunScene(int scene) {
 	// choose scene (creating MVC)
 	switch (scene) {
 		/////////////////////////////////////////////////////////////////////////////////////////////////////
-		case kViewGame:
-			// create view
+		case kViewHello:
 			m_pScene = HelloWorld::createScene();
+			Director::getInstance()->setDisplayStats(false);
+			break;
+		/////////////////////////////////////////////////////////////////////////////////////////////////////
+		case kViewGame:
+			m_pScene = GameScene::createScene();
+			Director::getInstance()->setDisplayStats(false);
+			break;
+			/////////////////////////////////////////////////////////////////////////////////////////////////////
+		case kViewSnake:
+			m_pScene = SnakeScene::createScene();
 			Director::getInstance()->setDisplayStats(false);
 			break;
 		/////////////////////////////////////////////////////////////////////////////////////////////////////

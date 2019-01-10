@@ -1,5 +1,5 @@
-#ifndef __HELLOWORLD_SCENE_H__
-#define __HELLOWORLD_SCENE_H__
+#ifndef __SNAKE_SCENE_H__
+#define __SNAKE_SCENE_H__
 
 #include "cocos2d.h"
 #include "Entity.h"
@@ -9,11 +9,11 @@
 
 USING_NS_CC;
 
-class HelloWorld : public cocos2d::Scene
+class SnakeScene : public cocos2d::Scene
 {
 public:
-	HelloWorld();
-	~HelloWorld();
+	SnakeScene();
+	~SnakeScene();
     static cocos2d::Scene* createScene();
 
 	Entity* pEntity;
@@ -53,7 +53,7 @@ public:
 	void onTouchEnded(cocos2d::Touch* touch, cocos2d::Event* event);
     
     // implement the "static create()" method manually
-    CREATE_FUNC(HelloWorld);
+    CREATE_FUNC(SnakeScene);
 };
 
-#endif // __HELLOWORLD_SCENE_H__
+#endif // __SNAKE_SCENE_H__

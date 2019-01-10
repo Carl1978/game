@@ -1,11 +1,11 @@
-#include "HelloWorldScene.h"
+#include "SnakeScene.h"
 #include "SimpleAudioEngine.h"
 #include "CGameManager.h"
 
 USING_NS_CC;
 
-HelloWorld::HelloWorld() {
-	cocos2d::log("ctr...");
+SnakeScene::SnakeScene() {
+	cocos2d::log("SnakeScene :: ctr...");
 
 	//std::shared_ptr<EntityManager> pEntityManager = std::make_shared<EntityManager>(this);
 	//std::shared_ptr<Entity> pEntity = std::make_shared<Entity>();
@@ -30,7 +30,7 @@ HelloWorld::HelloWorld() {
 	//}
 }
 
-HelloWorld::~HelloWorld() {
+SnakeScene::~SnakeScene() {
 	cocos2d::log("dtr...");
 	if (pEntityManager) {
 		pEntityManager->deinit();
@@ -55,20 +55,20 @@ HelloWorld::~HelloWorld() {
 	}*/
 }
 
-Scene* HelloWorld::createScene()
+Scene* SnakeScene::createScene()
 {
-    return HelloWorld::create();
+    return SnakeScene::create();
 }
 
 // Print useful error message instead of segfaulting when files are not there.
 static void problemLoading(const char* filename)
 {
     printf("Error while loading: %s\n", filename);
-    printf("Depending on how you compiled you might have to add 'Resources/' in front of filenames in HelloWorldScene.cpp\n");
+    printf("Depending on how you compiled you might have to add 'Resources/' in front of filenames in SnakeSceneScene.cpp\n");
 }
 
 // on "init" you need to initialize your instance
-bool HelloWorld::init()
+bool SnakeScene::init()
 {
     //////////////////////////////
     // 1. super init first
@@ -79,10 +79,10 @@ bool HelloWorld::init()
 
 	//Director::getInstance()->setClearColor(Color4F(0.0f, 1.0f, 0.0f, 0.0f));
 	//LayerColor *_bgColor = LayerColor::create(Color4B(204, 230, 255, 255));
-	/*LayerColor *_bgColor = LayerColor::create(Color4B(51, 119, 255, 255));
-	this->addChild(_bgColor, -10);*/
-	LayerGradient *_bgColor2 = LayerGradient::create(Color4B(51, 119, 255, 255), Color4B(0, 60, 179, 255), Vec2(0.0f, 1.0f));
-	this->addChild(_bgColor2, -10);
+	LayerColor *_bgColor = LayerColor::create(Color4B(80, 80, 80, 255));
+	this->addChild(_bgColor, -10);
+	//LayerGradient *_bgColor2 = LayerGradient::create(Color4B(51, 119, 255, 255), Color4B(0, 60, 179, 255), Vec2(0.0f, 1.0f));
+	//this->addChild(_bgColor2, -10);
 
     auto visibleSize = Director::getInstance()->getVisibleSize();
     Vec2 origin = Director::getInstance()->getVisibleOrigin();
@@ -93,9 +93,9 @@ bool HelloWorld::init()
 	auto dispatcher = Director::getInstance()->getEventDispatcher();
 	pListener = EventListenerTouchOneByOne::create();
 
-	pListener->onTouchBegan = CC_CALLBACK_2(HelloWorld::onTouchBegan, this);
-	pListener->onTouchMoved = CC_CALLBACK_2(HelloWorld::onTouchMoved, this);
-	pListener->onTouchEnded = CC_CALLBACK_2(HelloWorld::onTouchEnded, this);
+	pListener->onTouchBegan = CC_CALLBACK_2(SnakeScene::onTouchBegan, this);
+	pListener->onTouchMoved = CC_CALLBACK_2(SnakeScene::onTouchMoved, this);
+	pListener->onTouchEnded = CC_CALLBACK_2(SnakeScene::onTouchEnded, this);
 
 	dispatcher->addEventListenerWithSceneGraphPriority(pListener, this);
 
@@ -108,7 +108,7 @@ bool HelloWorld::init()
     auto closeItem = MenuItemImage::create(
                                            "close.png",
                                            "close_select.png",
-                                           CC_CALLBACK_1(HelloWorld::menuCloseCallback, this));
+                                           CC_CALLBACK_1(SnakeScene::menuCloseCallback, this));
 
     if (closeItem == nullptr ||
         closeItem->getContentSize().width <= 0 ||
@@ -127,7 +127,7 @@ bool HelloWorld::init()
 	auto playItem = MenuItemImage::create(
 		"nextbutton32x32.png",
 		"nextbutton32x32s.png",
-		CC_CALLBACK_1(HelloWorld::menuPlayCallback, this));
+		CC_CALLBACK_1(SnakeScene::menuPlayCallback, this));
 
 	if (playItem == nullptr ||
 		playItem->getContentSize().width <= 0 ||
@@ -149,10 +149,10 @@ bool HelloWorld::init()
 
     /////////////////////////////
     // 3. add your codes below...
-
+	/*
     // add a label shows "Hello World"
     // create and initialize a label
-
+	
     auto label = Label::createWithTTF("1 + 1?", "fonts/arial.ttf", 24);
     if (label == nullptr)
     {
@@ -169,65 +169,7 @@ bool HelloWorld::init()
         this->addChild(label, 1);
     }
 
-	//auto labelMsg = Label::createWithTTF("nincs mas        szia          nem   tudom       ehes vagyok    hogy  vagy", "fonts/arial.ttf", 20);
-	//labelMsg->setPosition(Vec2(origin.x + visibleSize.width / 2,
-	//	origin.y + visibleSize.height * 0.5f - labelMsg->getContentSize().height + 200.0f));
-	//this->addChild(labelMsg, 1);
-
- //   // add "HelloWorld" splash screen"
- //   auto sprite = Sprite::create("HelloWorld.png");
- //   if (sprite == nullptr)
-	//{
-	//	problemLoading("'HelloWorld.png'");
-	//}
- //   else
- //   {
- //       // position the sprite on the center of the screen
- //       sprite->setPosition(Vec2(visibleSize.width/2 + origin.x, visibleSize.height/2 + origin.y));
-
- //       // add the sprite as a child to this layer
- //       this->addChild(sprite, 0);
- //   }
-
-	// horizontal floor
-	//float sx = (visibleSize.width * 1.0f / 8.0f) * 1.1f;
-	//float sy = 2.0f * 1.0f / 8.0f;
-	//auto mySpriteGround = Sprite::create("white8x8.png");
-	//if (mySpriteGround != nullptr) {
-	//	mySpriteGround->setOpacity(255);
-	//	mySpriteGround->setScaleX(sx);
-	//	mySpriteGround->setScaleY(sy);
-	//	mySpriteGround->setPosition(Vec2(visibleSize.width * 0.5f,
-	//									 mySpriteGround->getContentSize().height* 0.5f + 50.0f));
-	//	this->addChild(mySpriteGround, 1);
-	//}
-
-	//auto mySpriteGround2 = Sprite::create("white8x8.png");
-	//if (mySpriteGround2 != nullptr) {
-	//	mySpriteGround2->setOpacity(255);
-	//	mySpriteGround2->setColor(Color3B(100, 255, 100));
-	//	mySpriteGround2->setScaleX(sx);
-	//	float s = 52.0f * (1.0f / 8.0f);
-	//	mySpriteGround2->setScaleY(s);
-	//	mySpriteGround2->setPosition(Vec2(visibleSize.width * 0.5f,
-	//									  mySpriteGround2->getContentSize().height* 0.5f * s));
-	//	this->addChild(mySpriteGround2, 1);
-	//}
-
-	// player
-	//m_pSpritePlayer = Sprite::create("face64x64.png");
-	//if (m_pSpritePlayer != nullptr) {
-	//	float f = 0.5f; // 50% percent reduction in size
-	//	m_pSpritePlayer->setOpacity(255);
-	//	m_pSpritePlayer->setRotation(0);
-	//	m_pSpritePlayer->setScale(f);
-	//	m_pSpritePlayer->setPosition(Vec2(m_pSpritePlayer->getContentSize().width*0.5f*f + 40.0f,
-	//							   m_pSpritePlayer->getContentSize().height*0.5f*f + mySpriteGround->getContentSize().height*0.5f + 50.0f));
-	//	m_pSpritePlayer->setVisible(true);
-	//	
-	//	this->addChild(m_pSpritePlayer, 1);
-	//}
-
+	
 	// air / cloud strips #1,2,3
 	Color3B cloudColours[3] = {
 		Color3B(0, 68, 204),
@@ -244,38 +186,17 @@ bool HelloWorld::init()
 		spriteAir->setPosition(Vec2(visibleSize.width * 0.5f, visibleSize.height*0.75f - p * 60));
 		this->addChild(spriteAir, 1);
 	}
-	
+	*/
 	bShake = false;
 
 	pEntityManager->init();
 
 	float globalOffsetY = -20.0f;
-
-	// entity
-	m_pSpritePlayer = pEntity->pSprite = Sprite::create("birdywalk1super64x64.png");
-	float groundLevelOffsetY = -8;
-	float groundLevelOffsetX = -300;
-	m_pSpritePlayer->setPosition(Vec2(visibleSize.width*0.5f + groundLevelOffsetX, 64.0f + 32.0f + groundLevelOffsetY + globalOffsetY));
-	this->addChild(m_pSpritePlayer, 21);
-
+	
 	float sx = 1.0f * 1.0f / 8.0f;
 	float sy = (visibleSize.height * 1.0f / 8.0f);
 	float markerOffsetX = 8.0f;
 	float markerOffsetY = 32.0f - 4.0f + 24.0f;
-
-	// vertical marker line guide (lazer beam)
-	m_pSpriteLazer = Sprite::create("white8x8.png");
-	if (m_pSpriteLazer != nullptr) {
-		m_pSpriteLazer->setColor(Color3B(255, 0, 0));
-		m_pSpriteLazer->setOpacity(192);
-		m_pSpriteLazer->setScaleX(1.0f * 1.0f / 8.0f);
-		m_pSpriteLazer->setScaleY(0.0f * 1.0f / 8.0f);
-		m_pSpriteLazer->setAnchorPoint(Vec2(0.5f, 0.0f));
-		Vec2 P = m_pSpritePlayer->getPosition();
-		m_pSpriteLazer->setPosition(Vec2(P.x + markerOffsetX, P.y + visibleSize.height*0.0f + markerOffsetY + globalOffsetY));
-		this->addChild(m_pSpriteLazer, 30);
-		Letter::T = Vec2(P.x + markerOffsetX, -1.0f);
-	}
 
 	// vertical marker
 	m_pSpriteMarker = Sprite::create("white8x8.png");
@@ -284,75 +205,47 @@ bool HelloWorld::init()
 		m_pSpriteMarker->setOpacity(96);
 		m_pSpriteMarker->setScaleX(sx);
 		m_pSpriteMarker->setScaleY(sy);
-		Vec2 P = m_pSpritePlayer->getPosition();
-		m_pSpriteMarker->setPosition(Vec2(P.x + markerOffsetX, P.y + visibleSize.height*0.5f + markerOffsetY + globalOffsetY));
+		m_pSpriteMarker->setPosition(Vec2(visibleSize.width*0.75f, visibleSize.height*0.5f));
 		this->addChild(m_pSpriteMarker, 29);
 	}
 
-	animFrames.reserve(2);
-	animFrames.pushBack(SpriteFrame::create("birdywalk1super64x64.png", Rect(0, 0, 64, 64)));
-	animFrames.pushBack(SpriteFrame::create("birdywalk2super64x64.png", Rect(0, 0, 64, 64)));
+	// --------------------------------------------------------------- //
+	// a simple snake 16x16 pixel boxes - 8 segments horizontally long
+	//float unitScale = 1.0f / 64.0f;//1.0f / 8.0f;
+	float unitScale = 1.0f / 8.0f;
+	Size pixels = Size(8, 8);
+	float segments = 16;
+	//Vec2 scale = Vec2(pixels.width * unitScale * segments, pixels.height * 1.0f);// unitScale);
+	Vec2 scale = Vec2(pixels.width * unitScale * segments, pixels.height * unitScale);
 
-	// create the animation out of the frames
-	animation = Animation::createWithSpriteFrames(animFrames, 0.05f);
-	animate = Animate::create(animation);
+	scale.x = 1.0f;
+	scale.y = 1.0f;
 
-	// run it and repeat it forever
-	m_pSpritePlayer->runAction(RepeatForever::create(animate));
+	// create a snake sprite
+	auto spriteSnake = Sprite::create("snake8x8.png");
+	//auto spriteSnake = Sprite::create("snake64x1.png");
+	//auto spriteSnake = Sprite::create("snake64x1.png", Rect(0, 0, 8, 8));
+	//spriteSnake->setContentSize(Size(200, 16));
 
-	// player rocking for side-to-side
-	rotateToLeft = RotateTo::create(0.07f, 6.0f);
-	rotateToRight = RotateTo::create(0.07f, -6.0f);
-	seqJelly = Sequence::create(rotateToLeft, rotateToRight, nullptr);
-	repeatSeqJelly = RepeatForever::create(seqJelly);
-	m_pSpritePlayer->runAction(repeatSeqJelly);
-	repeatSeqJelly->retain();
-	seqJelly->retain();
-	rotateToLeft->retain();
-	rotateToRight->retain();
-	
-	// letter
-	/*pLetter->spawn("face64x64.png", Vec2(visibleSize.width*0.5f, visibleSize.height*0.5f));
-	pEntityManager->addEntity(pLetter);*/
+	spriteSnake->setContentSize(Size(16, 8));
+	Texture2D::TexParams tp = { GL_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT };
+	spriteSnake->getTexture()->setTexParameters(tp);
+	spriteSnake->setTextureRect(Rect(0, 0, 16*8, 8));
 
-	int n = 0;
-	Letter* letter = nullptr;
-	
-	/*for (n = 0; n < 3; n++) {
-		letter = new Letter(this);
-		letter->spawn("B", 1, "white8x8.png", Vec2(200.0f + n * 320.0f, visibleSize.height*0.5f + n * 60));
-		pEntityManager->addEntity(letter);
-	}*/
 
-	std::string french = "Bon  Bon  jour  bononoj  Bon  on  Jour  Jourouru  Bonjour";
-	std::string s;// = std::string(1, french[3]);
-	int length = french.size();
-	float letterWidth = 16.0f;
-	//cocos2d::log("french[3]: %c", french[3]);
-	//cocos2d::log("s: %s", s.c_str());
-	int m = -1;
-	int i;
-	for (i = 0; i < 3; i++) {
-		for (n = 0; n <length; n++) {
-			s = std::string(1, french[n]);
-			if (s != " ") { // ignore white-space characters
-				letter = new Letter(this);
-				letter->spawn(s, i + 2, "white8x8.png", Vec2(200.0f + m * 320.0f + n*(letterWidth+4), visibleSize.height*0.75f - i * 60));
-				pEntityManager->addEntity(letter);
-			}
-		}
-	}
-	
-	Floor* floor = nullptr;
-	float width = visibleSize.width;
-	float tileWidth = 64.0f;
-	int floorTilesN = int(width / tileWidth) + 2; // 2 extra tiles needed minimum (1 for floor of value and 1 for seamless wrapping)
-	for (n = 0; n < floorTilesN; n++) {
-		floor = new Floor(this);
-		floor->spawn("bodygreen64x64.png", Vec2(tileWidth*0.5f + n * 64.0f, tileWidth*0.5f + globalOffsetY));
-		pEntityManager->addEntity(floor);
-	}
+	spriteSnake->setColor(Color3B(0, 255, 0));
+	spriteSnake->setOpacity(192);
+	//spriteSnake->setScaleX(scale.x);
+	//spriteSnake->setScaleY(scale.y);
+	spriteSnake->setPosition(Vec2(visibleSize.width*0.5f, visibleSize.height*0.5f));
+	this->addChild(spriteSnake);
 
+	// make it grow and shrink animation
+	auto scaleTo = ScaleTo::create(1.0f, scale.x * 2.0f, scale.y * 2.0f);
+	auto scaleTo2 = ScaleTo::create(1.0f, scale.x * 0.5f, scale.y * 0.5f);
+	auto seqScale = Sequence::create(scaleTo, scaleTo2, nullptr);
+	spriteSnake->runAction(RepeatForever::create(seqScale));
+	// --------------------------------------------------------------- //
 
 	// TODO: add factory method for creating different types of derived entities.
 
@@ -362,22 +255,22 @@ bool HelloWorld::init()
     return true;
 }
 
-void HelloWorld::update(float dt)
+void SnakeScene::update(float dt)
 {
 	//cocos2d::log("update...");
 
 	Vec2 origin = Director::getInstance()->getVisibleOrigin();
 	Size visibleSize = Director::getInstance()->getVisibleSize();
 	
-	if (m_pSpriteLazer->getScaleY() >= (visibleSize.height * (1.0f / 8.0f) *  0.75f)) // 90% of full  size
-		bShake = true;
+	//if (m_pSpriteLazer->getScaleY() >= (visibleSize.height * (1.0f / 8.0f) *  0.75f)) // 90% of full  size
+	//	bShake = true;
 	
-	shakeTheWorld(bShake);
+	//shakeTheWorld(bShake);
 
-	pEntityManager->process();
+	//pEntityManager->process();
 }
 
-void HelloWorld::shakeTheWorld(bool bStatus) {
+void SnakeScene::shakeTheWorld(bool bStatus) {
 	if (bStatus) {
 		// shake the place!! :P
 		float fx = (-25 + rand() % 51) * 0.1f;;
@@ -390,7 +283,7 @@ void HelloWorld::shakeTheWorld(bool bStatus) {
 	}
 }
 
-void HelloWorld::menuCloseCallback(Ref* pSender)
+void SnakeScene::menuCloseCallback(Ref* pSender)
 {
     //Close the cocos2d-x game scene and quit the application
     Director::getInstance()->end();
@@ -407,7 +300,7 @@ void HelloWorld::menuCloseCallback(Ref* pSender)
 
 }
 
-void HelloWorld::menuPlayCallback(Ref* pSender)
+void SnakeScene::menuPlayCallback(Ref* pSender)
 {
 	CocosDenshion::SimpleAudioEngine::getInstance()->playEffect("click.wav");
 	// replace scene
@@ -415,13 +308,14 @@ void HelloWorld::menuPlayCallback(Ref* pSender)
 	CGameManager::Instance()->RunScene(kViewGame);
 }
 
-bool HelloWorld::onTouchBegan(cocos2d::Touch* touch, cocos2d::Event* event)
+bool SnakeScene::onTouchBegan(cocos2d::Touch* touch, cocos2d::Event* event)
 {
 	Point location = touch->getLocationInView();
 	Size visibleSize = Director::getInstance()->getVisibleSize();
 	location.y = visibleSize.height - location.y; // invert direction
-	cocos2d::log("HelloWorld::onTouchBegan : You touched %f, %f", location.x, location.y);
+	cocos2d::log("SnakeScene::onTouchBegan : You touched %f, %f", location.x, location.y);
 
+	/*
 	if (m_pSpritePlayer) {
 		m_pSpritePlayer->stopAction(repeatSeqJelly);
 		m_pSpritePlayer->stopAction(rotateToLeft);
@@ -458,21 +352,23 @@ bool HelloWorld::onTouchBegan(cocos2d::Touch* touch, cocos2d::Event* event)
 		//seqScale = Sequence::create(scaleTo, scaleTo2, nullptr);
 		m_pSpriteLazer->runAction(scaleTo2);
 	}
+	*/
 
 	return true;
 }
 
-void HelloWorld::onTouchMoved(cocos2d::Touch* touch, cocos2d::Event* event)
+void SnakeScene::onTouchMoved(cocos2d::Touch* touch, cocos2d::Event* event)
 {
 }
 
-void HelloWorld::onTouchEnded(cocos2d::Touch* touch, cocos2d::Event* event)
+void SnakeScene::onTouchEnded(cocos2d::Touch* touch, cocos2d::Event* event)
 {
 	Point location = touch->getLocationInView();
 	Size visibleSize = Director::getInstance()->getVisibleSize();
 	location.y = visibleSize.height - location.y; // invert direction
-	cocos2d::log("HelloWorld::onTouchEnded : You touched %f, %f", location.x, location.y);
+	cocos2d::log("SnakeScene::onTouchEnded : You touched %f, %f", location.x, location.y);
 
+	/*
 	if (m_pSpritePlayer) {
 		Letter::T.y = -1.0f; // indicates we are NOT firing laser! < 0
 		m_pSpritePlayer->stopAction(rotateToShoot);
@@ -514,4 +410,5 @@ void HelloWorld::onTouchEnded(cocos2d::Touch* touch, cocos2d::Event* event)
 		//seqScale = Sequence::create(scaleTo, scaleTo2, nullptr);
 		//m_pSpriteLazer->runAction(scaleTo);
 	}
+	*/
 }

@@ -1,19 +1,22 @@
-#ifndef __HELLOWORLD_SCENE_H__
-#define __HELLOWORLD_SCENE_H__
+#ifndef __GAME_SCENE_H__
+#define __GAME_SCENE_H__
 
 #include "cocos2d.h"
 #include "Entity.h"
 #include "EntityManager.h"
 #include "Letter.h"
 #include "Floor.h"
+#include "Boat.h"
+#include "Icon.h"
+#include "IconString.h"
 
 USING_NS_CC;
 
-class HelloWorld : public cocos2d::Scene
+class GameScene : public cocos2d::Scene
 {
 public:
-	HelloWorld();
-	~HelloWorld();
+	GameScene();
+	~GameScene();
     static cocos2d::Scene* createScene();
 
 	Entity* pEntity;
@@ -40,6 +43,25 @@ public:
 	Sequence* seqJelly;
 	RotateTo* rotateToShoot;
 	RepeatForever* repeatSeqJelly;
+	Sprite* waveSpr[4][6];
+	Vec2 wavePos[4];
+	float m_seq;
+	long m_cyc;
+	Sprite* m_pSpriteBoat;
+	Sprite* m_pSpriteMan;
+	DrawNode* m_pPolygon;
+
+	Boat* m_pBoat;
+	std::shared_ptr<Boat> m_boat;
+	std::shared_ptr<Boat> m_boatArr[4];
+	std::shared_ptr<Boat>* m_pBoatArr;
+
+	Icon* m_pIconB;
+	std::shared_ptr<Icon> m_iconArr[7];
+
+	std::shared_ptr<IconString> m_iconStringBonjour;
+
+
 
     virtual bool init();
 	void update(float dt);
@@ -53,7 +75,7 @@ public:
 	void onTouchEnded(cocos2d::Touch* touch, cocos2d::Event* event);
     
     // implement the "static create()" method manually
-    CREATE_FUNC(HelloWorld);
+    CREATE_FUNC(GameScene);
 };
 
-#endif // __HELLOWORLD_SCENE_H__
+#endif // __GAME_SCENE_H__

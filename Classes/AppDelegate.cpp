@@ -142,9 +142,13 @@ bool AppDelegate::applicationDidFinishLaunching() {
 	searchPaths.push_back("res/pngcards");
 	searchPaths.push_back("res/panel");
 	searchPaths.push_back("res/sounds");
+	searchPaths.push_back("res/letters");
+	searchPaths.push_back("res/freeassets");
 #else
 	searchPaths.push_back("biomessres");
 	searchPaths.push_back("sounds");
+	searchPaths.push_back("letters");
+	searchPaths.push_back("freeassets");
 #endif
 	pFileUtils->setSearchPaths(searchPaths);
 
@@ -215,11 +219,13 @@ bool AppDelegate::applicationDidFinishLaunching() {
     register_all_packages();
 
     // create a scene. it's an autorelease object
-    auto scene = HelloWorld::createScene();
+    //auto scene = HelloWorld::createScene();
 
     // run
     //director->runWithScene(scene);
+	//CGameManager::Instance()->RunScene(kViewHello);
 	CGameManager::Instance()->RunScene(kViewGame);
+	//CGameManager::Instance()->RunScene(kViewSnake);
 
     return true;
 }
