@@ -1,6 +1,13 @@
-#include "GameScene.h"
+﻿#include "GameScene.h"
 #include "SimpleAudioEngine.h"
 #include "CGameManager.h"
+#include "json/document.h"			// will include "rapidjson/rapidjson.h"
+#include "json/writer.h"
+#include "json/stringbuffer.h"
+#include "json/filereadstream.h"   // FileReadStream
+#include "json/encodedstream.h"    // EncodedInputStream
+#include <sstream>
+#include <iostream>
 
 // Free Assets (will add in credits)
 // https://bayat.itch.io/platform-game-assets
@@ -10,8 +17,12 @@
 // Free licence with attribution
 // https://www.freepik.com/free-vector/set-of-four-pretty-boats-of-colors_1108849.htm
 
+// Free fonts .ttf
+// https://www.fontspace.com/search/?q=bitmap
+
 
 USING_NS_CC;
+using namespace rapidjson;
 
 Vec2* Letter::wavePos;
 
@@ -99,6 +110,60 @@ bool GameScene::init()
     {
         return false;
     }
+
+
+	// --------------------------------- ///
+
+	// default JSON filename
+	std::string strFilename("json/magyar.json");
+
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
+	// Works - reads correct json file UTF8 (ANSI)
+	//auto fileData = FileUtils::getInstance()->getDataFromFile("example.json");
+	//std::string content((const char *)fileData.getBytes(), fileData.getSize());
+	//m_document.Parse<0>(content.c_str());
+	//assert(m_document.IsObject());
+	//assert(m_document.HasMember("hello"));
+	//assert(m_document["hello"].IsString());
+
+	// Works - reads correct json file UTF16 (UNICODE)
+	auto fileData = FileUtils::getInstance()->getDataFromFile(strFilename);
+	std::string content((const char *)fileData.getBytes(), fileData.getSize());
+
+	StringStream bis(content.c_str());
+	EncodedInputStream<UTF16LE<>, StringStream> eis(bis); // wraps bis into eis
+	m_document.ParseStream<0, UTF16LE<> >(eis);  // Parses UTF-16 file into UTF-8 in memory
+
+	assert(m_document.IsObject());
+	//assert(m_document.HasMember("hello"));
+	//assert(m_document["hello"].IsString());
+#endif
+
+
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32)
+	// Works - reads correct json file UTF8 (ANSI)
+	//FILE *fp = fopen("example.json", "rb"); // non-Windows use "r"
+	//char readBuffer[65536];
+	//FileReadStream is(fp, readBuffer, sizeof(readBuffer));
+	//m_document.ParseStream(is);
+	//fclose(fp);
+
+	// Works - reads correct json file UTF16 (UNICODE)
+	FILE *fp = fopen(strFilename.c_str(), "rt+, ccs=UNICODE");
+	char readBuffer[256];
+	FileReadStream bis(fp, readBuffer, sizeof(readBuffer));
+	EncodedInputStream<UTF16LE<>, FileReadStream> eis(bis);  // wraps bis into eis
+	m_document.ParseStream<0, UTF16LE<> >(eis);  // Parses UTF-16 file into UTF-8 in memory
+	fclose(fp);
+#endif
+
+
+	// debug
+	char buff[256];
+	sprintf(buff, "m_document['magyar'].GetString() : %s", m_document["magyar"].GetString());
+	cocos2d::log(buff);
+	// --------------------------------- ///
+
 
 	//Director::getInstance()->setClearColor(Color4F(0.0f, 1.0f, 0.0f, 0.0f));
 	//LayerColor *_bgColor = LayerColor::create(Color4B(204, 230, 255, 255));
@@ -192,6 +257,125 @@ bool GameScene::init()
         // add the label as a child to this layer
         this->addChild(label, 2);
     }
+
+
+	//////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////
+	// Create a label with given font - i.e. for test we display the letter "A" on the screen.
+	//auto ssize = Director::getInstance()->getWinSize();
+	//auto fsize = size.width / 4;
+	//TTFConfig config("fonts/arial.ttf", 64.0f);
+	TTFConfig config("fonts/Good Unicorn - TTF.ttf", 64.0f);
+	//TTFConfig config("fonts/Arcade.ttf", 64.0f);
+
+	//auto ttf0 = Label::createWithTTF(config, "szia", cocos2d::TextHAlignment::CENTER);
+	auto ttf0 = Label::createWithTTF(config, m_document["magyar"].GetString(), cocos2d::TextHAlignment::CENTER);
+	ttf0->setTextColor(Color4B::YELLOW);
+	//ttf0->setColor(Color3B::RED);
+	ttf0->enableOutline(Color4B::WHITE, 4);
+	ttf0->setPosition(visibleSize.width*0.5f, visibleSize.height*0.5f);
+	//addChild(ttf0, 300);
+	
+	Sprite *gSpr = Sprite::create();
+	gSpr->addChild(ttf0, 0);
+	addChild(gSpr, 300);
+
+	//auto ttf1 = Label::createWithTTF(config, "A", cocos2d::TextHAlignment::CENTER);
+	//auto ttf1 = Label::createWithTTF(config, m_document["magyar"].GetString(), cocos2d::TextHAlignment::CENTER);
+	auto ttf1 = Label::createWithTTF(config, m_document["magyar_letter"].GetString(), cocos2d::TextHAlignment::CENTER);
+	//ttf1->setTextColor(Color4B::YELLOW);
+	//ttf1->enableOutline(Color4B::WHITE, 4);
+	ttf1->setTextColor(Color4B::WHITE);
+	ttf1->enableOutline(Color4B::BLACK, 4);
+	//ttf1->setPosition(Vec2::ZERO);
+
+	Size letterSize = ttf1->getContentSize() + Size(ttf1->getOutlineSize(), ttf1->getOutlineSize());
+	ttf1->setPosition(Vec2(letterSize.width*0.5f, letterSize.height*0.5f));
+	//addChild(ttf1, 500);
+
+	Sprite *gSpr2 = Sprite::create();
+	//gSpr2->setPosition(Vec2(ttf1->getContentSize().width, ttf1->getContentSize().height*0.5f));
+	gSpr2->addChild(ttf1, 0);
+//	addChild(gSpr2, 500);
+
+
+	// Create a sprite from this label's string "A"
+	/*auto ts = Sprite::createWithTexture(ttf0->getL getTextureAtlas ()->getTexture(), Rect(0, 0, fsize, fsize));
+	ts->setColor(Color3B::MAGENTA);
+	ts->setPosition(ssize.width / 2 - ssize.width / 4, ssize.width / 4);
+	addChild(ts);*/
+
+	Sprite *pSpriteLetterA = ttf0->getLetter(1);
+	//Sprite *pSpriteLetterA = Sprite::create("birdywalk1super64x64.png");
+	//pSpriteLetterA->setColor(Color3B(0, 0, 255));
+	//Sprite *pSprA = Sprite::createWithTexture(pSpriteLetterA->getTexture());
+	//cocos2d::log("r: %d, g: %d, b: %d", pSpriteLetterA->getColor().r, pSpriteLetterA->getColor().g, pSpriteLetterA->getColor().b);
+	//cocos2d::log("r: %d, g: %d, b: %d", pSprA->getColor().r, pSprA->getColor().g, pSprA->getColor().b);
+	Sprite *pSprA = Sprite::createWithSpriteFrame(pSpriteLetterA->getSpriteFrame());
+	pSprA->setPosition(visibleSize.width*0.5f, visibleSize.height*0.5f - 100.0f);
+	pSprA->setColor(Color3B::RED);
+	pSprA->setOpacity(128);
+	pSprA->setRotation(45.0f);
+	addChild(pSprA, 301);
+	//addChild(pSpriteLetterA, 301);
+
+
+	//LabelBMFont *font = LabelBMFont::create("Hello", "");
+
+	Sprite *pSprNew = Sprite::create("birdywalk1super64x64.png");
+	addChild(pSprNew, 400);
+
+	RenderTexture* _rend;
+	//_rend = RenderTexture::create(200, 200, Texture2D::PixelFormat::RGBA8888);
+	_rend = RenderTexture::create(letterSize.width, letterSize.height, Texture2D::PixelFormat::RGBA8888);
+	_rend->retain();
+	_rend->setKeepMatrix(true);
+	Size pixelSize = Director::getInstance()->getWinSizeInPixels();
+	/*cocos2d::log("ttf1->getContentSize().width : %f", ttf1->getContentSize().width);
+	cocos2d::log("ttf1->getWidth() : %f", ttf1->getWidth());
+	cocos2d::log("gSpr2->getContentSize().width : %f", gSpr2->getContentSize().width);*/
+	_rend->setVirtualViewport(Vec2(0, 0),
+							  Rect(0, 0, visibleSize.width, visibleSize.height),
+							  Rect(0, 0, pixelSize.width, pixelSize.height));
+
+	_rend->beginWithClear(1, 1, 1, 0);
+	//_rend->beginWithClear(1, 0, 0, 1); // debugging purposes (shows red opaque background)
+	gSpr2->visit();
+	//pSprNew->visit();
+	//ttf0->visit()
+	//this->visit();
+	_rend->end();
+
+	Sprite* _spriteDraw = Sprite::createWithTexture(_rend->getSprite()->getTexture());
+	addChild(_spriteDraw, 500);
+	_spriteDraw->setPosition(Vec2(250.0f, 250.0f));
+	float scale = 1.0f;
+	_spriteDraw->setScaleY(-1.0f * scale);
+	_spriteDraw->setScaleX(scale);
+	//_spriteDraw->setRotation(30.0f);
+	//_spriteDraw->setOpacity(255);
+	//_spriteDraw->setColor(Color3B(255, 128, 128));
+	auto scaleLeft = ScaleTo::create(0.2f, 1.1f, -1.1f);
+	auto scaleRight = ScaleTo::create(0.2f, 0.7f, -0.7f);
+	auto seqLeftRight = Sequence::create(scaleLeft, scaleRight, nullptr);
+	auto repeatSeqLeftRight = RepeatForever::create(seqLeftRight);
+	auto rot180 = RotateTo::create(1.0f, 180.0f);
+	auto rot360 = RotateTo::create(1.0f, 360.0f);
+	auto seqRot360 = Sequence::create(rot180, rot360, nullptr);
+	auto repeatSeqRot360 = RepeatForever::create(seqRot360);
+	_spriteDraw->runAction(repeatSeqRot360);
+	_spriteDraw->runAction(repeatSeqLeftRight);
+
+
+	//////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////
+	
+
+
+
+
 
 	auto spriteAir = Sprite::create("white8x8.png");
 	spriteAir->setOpacity(255);

@@ -2,6 +2,7 @@
 #define __GAME_SCENE_H__
 
 #include "cocos2d.h"
+#include "json/document.h"
 #include "Entity.h"
 #include "EntityManager.h"
 #include "Letter.h"
@@ -11,6 +12,7 @@
 #include "IconString.h"
 
 USING_NS_CC;
+using namespace rapidjson;
 
 class GameScene : public cocos2d::Scene
 {
@@ -19,6 +21,7 @@ public:
 	~GameScene();
     static cocos2d::Scene* createScene();
 
+	rapidjson::Document m_document; // Document is GenericDocument<UTF8<> > 
 	Entity* pEntity;
 	EntityManager* pEntityManager;
 	Letter* pLetter;
