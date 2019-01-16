@@ -69,6 +69,8 @@ public:
     virtual bool init();
 	void update(float dt);
 	void shakeTheWorld(bool bStatus = true);
+	Sprite* createSpriteFromLabel(Label* pLabel);
+	std::vector<Sprite*> createSpriteArrFromLabel(Label* pLabel, const std::string& text);
 
     // a selector callback
     void menuCloseCallback(Ref* pSender);

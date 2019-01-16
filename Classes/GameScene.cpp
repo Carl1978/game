@@ -7,7 +7,15 @@
 #include "json/filereadstream.h"   // FileReadStream
 #include "json/encodedstream.h"    // EncodedInputStream
 #include <sstream>
+//#include <iostream>
+//#include <string>
+//#include <cstring>
 #include <iostream>
+#include <string>
+#include <locale>
+#include <fcntl.h>
+#include <io.h>
+#include <cstring>
 
 // Free Assets (will add in credits)
 // https://bayat.itch.io/platform-game-assets
@@ -25,6 +33,89 @@ USING_NS_CC;
 using namespace rapidjson;
 
 Vec2* Letter::wavePos;
+
+
+// convert from const* char to const wchar_t*
+std::wstring to_wstr(const char *mbstr)
+{
+	std::mbstate_t state{}; // conversion state
+
+							// get the number of characters
+							// when successfully converted
+	const char *p = mbstr;
+
+	// check length
+	int len = std::strlen(p);
+	std::wcout << "len: " << len << std::endl;
+
+	//size_t clen = mbsrtowcs(NULL, &p, 0 /* ignore */, &state) + 4;
+	// + 1; // for termination null character (not needed though)
+
+	size_t clen = len;
+
+	// failed to calculate
+	// the character length  of the converted string
+	if (clen == 0)
+	{
+		std::wcout << "failed!!!" << std::endl;
+		return L""; // empty wstring
+	}
+
+	// reserve clen characters
+	// wstring reserves +1 character
+	std::wstring rlt(clen, L'\0');
+
+	size_t converted = mbsrtowcs(&rlt[0], &mbstr, rlt.size(), &state);
+	if (converted == static_cast<std::size_t>(-1))
+	{
+		std::wcout << "failed!" << std::endl;
+		return L""; // empty string
+	}
+	else
+	{
+		std::wcout << "success!" << std::endl;
+		return rlt;
+	}
+}
+
+// convert from const* wchar_t to const char*
+std::string to_str(const wchar_t *wcstr)
+{
+	if (wcstr == NULL || wcslen(wcstr) == 0)
+	{
+		return ""; // empty string
+	}
+
+	std::mbstate_t state{}; // conversion state
+
+	const wchar_t *p = wcstr;
+
+	int len = std::wcslen(p);
+	std::wcout << "len: " << len << std::endl;
+
+	//size_t clen = wcsrtombs(NULL, &p, 0, &state) + 1;
+	size_t clen = len;
+
+	// cannot determine or convert to const char*
+	if (clen == 0 || clen == static_cast<std::size_t>(-1))
+	{
+		return ""; // empty  string
+	}
+
+	std::string rlt(clen, '\0');
+
+	size_t converted = wcsrtombs(&rlt[0], &wcstr, rlt.size(), &state);
+
+	if (converted == static_cast<std::size_t>(-1))
+	{
+		return ""; // return empty string
+	}
+	else
+	{
+		return rlt;
+	}
+	return "";
+}
 
 GameScene::GameScene() {
 	cocos2d::log("ctr...");
@@ -258,124 +349,177 @@ bool GameScene::init()
         this->addChild(label, 2);
     }
 
+	//////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////
 
-	//////////////////////////////////////////////////////////
-	//////////////////////////////////////////////////////////
-	//////////////////////////////////////////////////////////
-	// Create a label with given font - i.e. for test we display the letter "A" on the screen.
-	//auto ssize = Director::getInstance()->getWinSize();
-	//auto fsize = size.width / 4;
-	//TTFConfig config("fonts/arial.ttf", 64.0f);
+	// Create a label with given font
 	TTFConfig config("fonts/Good Unicorn - TTF.ttf", 64.0f);
-	//TTFConfig config("fonts/Arcade.ttf", 64.0f);
+	//Label* pLabel= Label::createWithTTF(config, m_document["magyar_letter"].GetString(), cocos2d::TextHAlignment::CENTER);
+	Label* pLabel = Label::createWithTTF(config, m_document["magyar"].GetString(), cocos2d::TextHAlignment::CENTER);
+	pLabel->setTextColor(Color4B::WHITE);
+	pLabel->enableOutline(Color4B::BLACK, 4);
 
-	//auto ttf0 = Label::createWithTTF(config, "szia", cocos2d::TextHAlignment::CENTER);
-	auto ttf0 = Label::createWithTTF(config, m_document["magyar"].GetString(), cocos2d::TextHAlignment::CENTER);
-	ttf0->setTextColor(Color4B::YELLOW);
-	//ttf0->setColor(Color3B::RED);
-	ttf0->enableOutline(Color4B::WHITE, 4);
-	ttf0->setPosition(visibleSize.width*0.5f, visibleSize.height*0.5f);
-	//addChild(ttf0, 300);
-	
-	Sprite *gSpr = Sprite::create();
-	gSpr->addChild(ttf0, 0);
-	addChild(gSpr, 300);
+	// create sprite from this label
+	Sprite* pNewSprite = createSpriteFromLabel(pLabel);
+	pNewSprite->setPosition(Vec2(200.0f, 200.0f));
+	addChild(pNewSprite, 500);
 
-	//auto ttf1 = Label::createWithTTF(config, "A", cocos2d::TextHAlignment::CENTER);
-	//auto ttf1 = Label::createWithTTF(config, m_document["magyar"].GetString(), cocos2d::TextHAlignment::CENTER);
-	auto ttf1 = Label::createWithTTF(config, m_document["magyar_letter"].GetString(), cocos2d::TextHAlignment::CENTER);
-	//ttf1->setTextColor(Color4B::YELLOW);
-	//ttf1->enableOutline(Color4B::WHITE, 4);
-	ttf1->setTextColor(Color4B::WHITE);
-	ttf1->enableOutline(Color4B::BLACK, 4);
-	//ttf1->setPosition(Vec2::ZERO);
+	// create sprite vector array
+	/*std::vector<Sprite*> spriteArr = createSpriteArrFromLabel(pLabel, "Hello World");
+	Sprite* pNewSprite2 = spriteArr.at(0);
+	pNewSprite2->setPosition(Vec2(200.0f, 150.0f));
+	addChild(pNewSprite2, 500);*/
 
-	Size letterSize = ttf1->getContentSize() + Size(ttf1->getOutlineSize(), ttf1->getOutlineSize());
-	ttf1->setPosition(Vec2(letterSize.width*0.5f, letterSize.height*0.5f));
-	//addChild(ttf1, 500);
-
-	Sprite *gSpr2 = Sprite::create();
-	//gSpr2->setPosition(Vec2(ttf1->getContentSize().width, ttf1->getContentSize().height*0.5f));
-	gSpr2->addChild(ttf1, 0);
-//	addChild(gSpr2, 500);
+	Label* pLabel2 = nullptr;
+	Sprite* pNewSprite2 = nullptr;
+	//std::string alphanum = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
+	//std::string alphanum = "abcdefghijklmnopqrstuvwxyz1234567890";
+	//std::string alphanum = "Ian0987654321";
+	std::string alphanum2 = m_document["magyar"].GetString();
+	const char* alphanum = m_document["magyar"].GetString();
+	wchar_t* uni = (wchar_t*)alphanum;
+	cocos2d::log("uni : %s", uni);
 
 
-	// Create a sprite from this label's string "A"
-	/*auto ts = Sprite::createWithTexture(ttf0->getL getTextureAtlas ()->getTexture(), Rect(0, 0, fsize, fsize));
-	ts->setColor(Color3B::MAGENTA);
-	ts->setPosition(ssize.width / 2 - ssize.width / 4, ssize.width / 4);
-	addChild(ts);*/
-
-	Sprite *pSpriteLetterA = ttf0->getLetter(1);
-	//Sprite *pSpriteLetterA = Sprite::create("birdywalk1super64x64.png");
-	//pSpriteLetterA->setColor(Color3B(0, 0, 255));
-	//Sprite *pSprA = Sprite::createWithTexture(pSpriteLetterA->getTexture());
-	//cocos2d::log("r: %d, g: %d, b: %d", pSpriteLetterA->getColor().r, pSpriteLetterA->getColor().g, pSpriteLetterA->getColor().b);
-	//cocos2d::log("r: %d, g: %d, b: %d", pSprA->getColor().r, pSprA->getColor().g, pSprA->getColor().b);
-	Sprite *pSprA = Sprite::createWithSpriteFrame(pSpriteLetterA->getSpriteFrame());
-	pSprA->setPosition(visibleSize.width*0.5f, visibleSize.height*0.5f - 100.0f);
-	pSprA->setColor(Color3B::RED);
-	pSprA->setOpacity(128);
-	pSprA->setRotation(45.0f);
-	addChild(pSprA, 301);
-	//addChild(pSpriteLetterA, 301);
-
-
-	//LabelBMFont *font = LabelBMFont::create("Hello", "");
-
-	Sprite *pSprNew = Sprite::create("birdywalk1super64x64.png");
-	addChild(pSprNew, 400);
-
-	RenderTexture* _rend;
-	//_rend = RenderTexture::create(200, 200, Texture2D::PixelFormat::RGBA8888);
-	_rend = RenderTexture::create(letterSize.width, letterSize.height, Texture2D::PixelFormat::RGBA8888);
-	_rend->retain();
-	_rend->setKeepMatrix(true);
-	Size pixelSize = Director::getInstance()->getWinSizeInPixels();
-	/*cocos2d::log("ttf1->getContentSize().width : %f", ttf1->getContentSize().width);
-	cocos2d::log("ttf1->getWidth() : %f", ttf1->getWidth());
-	cocos2d::log("gSpr2->getContentSize().width : %f", gSpr2->getContentSize().width);*/
-	_rend->setVirtualViewport(Vec2(0, 0),
-							  Rect(0, 0, visibleSize.width, visibleSize.height),
-							  Rect(0, 0, pixelSize.width, pixelSize.height));
-
-	_rend->beginWithClear(1, 1, 1, 0);
-	//_rend->beginWithClear(1, 0, 0, 1); // debugging purposes (shows red opaque background)
-	gSpr2->visit();
-	//pSprNew->visit();
-	//ttf0->visit()
-	//this->visit();
-	_rend->end();
-
-	Sprite* _spriteDraw = Sprite::createWithTexture(_rend->getSprite()->getTexture());
-	addChild(_spriteDraw, 500);
-	_spriteDraw->setPosition(Vec2(250.0f, 250.0f));
-	float scale = 1.0f;
-	_spriteDraw->setScaleY(-1.0f * scale);
-	_spriteDraw->setScaleX(scale);
-	//_spriteDraw->setRotation(30.0f);
-	//_spriteDraw->setOpacity(255);
-	//_spriteDraw->setColor(Color3B(255, 128, 128));
-	auto scaleLeft = ScaleTo::create(0.2f, 1.1f, -1.1f);
-	auto scaleRight = ScaleTo::create(0.2f, 0.7f, -0.7f);
-	auto seqLeftRight = Sequence::create(scaleLeft, scaleRight, nullptr);
-	auto repeatSeqLeftRight = RepeatForever::create(seqLeftRight);
-	auto rot180 = RotateTo::create(1.0f, 180.0f);
-	auto rot360 = RotateTo::create(1.0f, 360.0f);
-	auto seqRot360 = Sequence::create(rot180, rot360, nullptr);
-	auto repeatSeqRot360 = RepeatForever::create(seqRot360);
-	_spriteDraw->runAction(repeatSeqRot360);
-	_spriteDraw->runAction(repeatSeqLeftRight);
-
-
-	//////////////////////////////////////////////////////////
-	//////////////////////////////////////////////////////////
-	//////////////////////////////////////////////////////////
+	//char tmpArr[4];
+	//std::strcpy(tmpArr, alphanum);
 	
 
+	//std::string ss = std::string(alphanum, 1);
+	//cocos2d::log("ss : %s", ss);
+	//cocos2d::log("uni[1] : %s", uni[1]);
+	cocos2d::log("alphanum : %s", alphanum);
+	cocos2d::log("alphanum2 : %s", alphanum2);
+	//cocos2d::log("tmpArr[4] : %s", tmpArr);
+	
+
+	int wchars_num = MultiByteToWideChar(CP_UTF8, 0, alphanum2.c_str(), -1, NULL, 0);
+	wchar_t* wstr = new wchar_t[wchars_num];
+	cocos2d::log("wchars_num : %d", wchars_num);
+	MultiByteToWideChar(CP_UTF8, 0, alphanum2.c_str(), -1, wstr, wchars_num);
+	// do whatever with wstr
+	cocos2d::log("wstr : %s", wstr);
+	//delete[] wstr;
+
+	// TODO here
+	char cbuffer[256];
+	sprintf(cbuffer, "m_document['magyar'].GetString() : %s", m_document["magyar"].GetString());
+	cocos2d::log(m_document["magyar"].GetString());
+	cocos2d::log(cbuffer);
+
+	//// Prepare console output in Unicode
+	////_setmode(_fileno(stdout), 0x20000); //_O_U16TEXT);
+
+	//std::wcout << "Input Text:";
+	//std::cin >> cbuffer;
+
+	// convert to wstring
+	//std::string wordstr = m_document["magyar"].GetString();
+	//std::wstring wordstr = to_wstr(m_document["magyar"].GetString());
+	//std::wstring wstr1 = wordstr.substr(1, 2);
+	//std::string str1 = to_str(wordstr.c_str());
+	//std::string str1 = to_str(wstr1.c_str());
+
+	/*std::wcout << "Converted: " << wordstr << std::endl;
+	std::wcout << "wordstr.size() : " << wordstr.size() << std::endl;
+	std::wcout << "wstr1: " << wstr1 << std::endl;*/
+
+	/*cocos2d::log("Converted: %s", wordstr.c_str());
+	cocos2d::log("wordstr.size(): %d", wordstr.size());
+	cocos2d::log("str1: %s", str1.c_str());
+	cocos2d::log("str1.at(0): %c", str1.at(0));
+	cocos2d::log("str1.at(1): %c", str1.at(1));
+	cocos2d::log("str1.at(2): %c", str1.at(2));*/
+	
+	//std::vector<std::string> sArr;
 
 
+	// ----------------------------------------------- //
+	// special I wrote to check if we have an ASCII char or Unicode char (i.e. 2bytes)
+	// NOTE: in some cases this can be 32-bit 4bytes so may have to come back and add platform checking code here later!
+	//for (int pos = 0; pos < wordstr.size();)
+	//{
+	//	wchar_t c = wordstr.at(pos);
+	//	cocos2d::log("%c, %d", c, c);
+	//	// single char (in ASCII range)
+	//	if (c < 128) {
+	//		std::wstring ws = wordstr.substr(pos, 1);
+	//		std::string s = to_str(ws.c_str());
+	//		sArr.push_back(s);
+	//		cocos2d::log("s: %s", s.c_str());
+	//		pos++;
+	//	}
+	//	// double char needed (unicode range)
+	//	else {
+	//		std::wstring ws = wordstr.substr(pos, 2);
+	//		std::string s = to_str(ws.c_str());
+	//		sArr.push_back(s);
+	//		cocos2d::log("s: %s", s.c_str());
+	//		pos+=2;
+	//	}
+	//}
 
+	std::vector<std::string> sArr;
+	std::string wordstr = m_document["magyar"].GetString();
+
+	// special I wrote to check if we have an ASCII char or Unicode char (i.e. 2bytes)
+	// NOTE: in some cases this can be 32-bit 4bytes so may have to come back and add platform checking code here later!
+	// TODO: refactor into a nice neat helper function
+	for (int pos = 0; pos < wordstr.size();)
+	{
+		unsigned int c = wordstr.at(pos);
+		cocos2d::log("%c, %d", c, c);
+		// single char (in ASCII range)
+		if (c < 128) {
+			std::string s = wordstr.substr(pos, 1);
+			sArr.push_back(s);
+			cocos2d::log("s: %s", s.c_str());
+			pos++;
+		}
+		// double char needed (unicode range)
+		else {
+			std::string s = wordstr.substr(pos, 2);
+			sArr.push_back(s);
+			cocos2d::log("s: %s", s.c_str());
+			pos += 2;
+		}
+	}
+	// ----------------------------------------------- //
+
+
+	std::vector<Sprite*> spriteArr;
+
+	Vec2 P = Vec2(64.0f, 150.0f);
+	for (int i = 0; i < sArr.size(); i++) {
+		if (sArr[i].at(0) != 32) { // check we have a valid char (not space " " char)
+			pLabel2 = Label::createWithTTF(config, sArr[i].c_str(), cocos2d::TextHAlignment::CENTER);
+			pLabel2->setTextColor(Color4B::WHITE);
+			pLabel2->enableOutline(Color4B::BLACK, 6);
+
+			// create sprite from this label
+			pNewSprite2 = createSpriteFromLabel(pLabel2);
+			pNewSprite2->setScale(0.6f);
+			P.x += pNewSprite2->getContentSize().width * pNewSprite2->getScale();
+			//P.y += 5.0f;
+			pNewSprite2->setPosition(P);
+			pNewSprite2->setRotation(45.0f - rand()%90);
+			spriteArr.push_back(pNewSprite2);
+		}
+		else {
+			// for now assume space chars are equal to this width
+			P.x += 20.0f;
+		}
+	}
+	
+	for (Sprite* spr : spriteArr) {
+		if (spr) {
+			addChild(spr, 500);
+		}
+	}
+	
+	delete[] wstr;
+	//////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////
 
 	auto spriteAir = Sprite::create("white8x8.png");
 	spriteAir->setOpacity(255);
@@ -915,3 +1059,100 @@ void GameScene::onTouchEnded(cocos2d::Touch* touch, cocos2d::Event* event)
 		m_pSpriteLazer->setOpacity(0.0f);
 	}
 }
+
+Sprite* GameScene::createSpriteFromLabel(Label* pLabel) {
+	if (pLabel == nullptr) { return nullptr; }
+	
+	Size pixelSize = Director::getInstance()->getWinSizeInPixels();
+	auto visibleSize = Director::getInstance()->getVisibleSize();
+	Size letterSize = pLabel->getContentSize() + Size(pLabel->getOutlineSize()*2.0f, pLabel->getOutlineSize()*2.0f);
+	Vec2 labelPrevPos = pLabel->getPosition();
+	float labelPrevScaleY = pLabel->getScaleY();
+	RenderTexture* pRenderTexture;
+	Sprite* pSprite = nullptr;
+	Sprite* pSpriteContainer = Sprite::create();
+	
+	pRenderTexture = RenderTexture::create(letterSize.width, letterSize.height, Texture2D::PixelFormat::RGBA8888);
+	pRenderTexture->retain();
+	pRenderTexture->setKeepMatrix(true);
+	pRenderTexture->setVirtualViewport(Vec2(0, 0),
+										Rect(0, 0, visibleSize.width, visibleSize.height),
+										Rect(0, 0, pixelSize.width, pixelSize.height));
+
+	pSpriteContainer->addChild(pLabel, 0);
+	pLabel->setPosition(Vec2(letterSize.width*0.5f, letterSize.height*0.5f));
+	pLabel->setScaleY(-1.0f);
+	
+	pRenderTexture->beginWithClear(1, 1, 1, 0);
+	pSpriteContainer->visit();
+	pRenderTexture->end();
+	//pRenderTexture->saveToFile("test.png", Image::Format::PNG);
+	
+	pLabel->setScaleY(labelPrevScaleY);
+	pLabel->setPosition(labelPrevPos);
+	pSpriteContainer->removeChild(pLabel, false);
+
+	pSprite = Sprite::createWithTexture(pRenderTexture->getSprite()->getTexture());
+	pSprite->setContentSize(letterSize);
+
+	return pSprite;
+}
+
+std::vector<Sprite*> GameScene::createSpriteArrFromLabel(Label* pLabel, const std::string& text) {
+	std::vector<Sprite*> spriteArr;
+	if (pLabel == nullptr) { return spriteArr; }
+
+	pLabel->setString(text);
+
+	Size pixelSize = Director::getInstance()->getWinSizeInPixels();
+	auto visibleSize = Director::getInstance()->getVisibleSize();
+	Size letterSize = pLabel->getContentSize() + Size(pLabel->getOutlineSize(), pLabel->getOutlineSize());
+	Vec2 labelPrevPos = pLabel->getPosition();
+	float labelPrevScaleY = pLabel->getScaleY();
+	RenderTexture* pRenderTexture;
+	Sprite* pSprite = nullptr;
+	Sprite* pSpriteContainer = Sprite::create();
+
+	pRenderTexture = RenderTexture::create(letterSize.width, letterSize.height, Texture2D::PixelFormat::RGBA8888);
+	pRenderTexture->retain();
+	pRenderTexture->setKeepMatrix(true);
+	pRenderTexture->setVirtualViewport(Vec2(0, 0),
+		Rect(0, 0, visibleSize.width, visibleSize.height),
+		Rect(0, 0, pixelSize.width, pixelSize.height));
+
+	pSpriteContainer->addChild(pLabel, 0);
+	pLabel->setPosition(Vec2(letterSize.width*0.5f, letterSize.height*0.5f));
+	pLabel->setScaleY(-1.0f);
+
+	pRenderTexture->beginWithClear(1, 1, 1, 0);
+	pSpriteContainer->visit();
+	pRenderTexture->end();
+
+	pLabel->setScaleY(labelPrevScaleY);
+	pLabel->setPosition(labelPrevPos);
+	pSpriteContainer->removeChild(pLabel, false);
+
+	pSprite = Sprite::createWithTexture(pRenderTexture->getSprite()->getTexture());
+
+	spriteArr.push_back(pSprite);
+
+	return spriteArr;
+}
+
+//pSprite->setPosition(Vec2(250.0f, 250.0f));
+//float scale = 1.0f;
+//pSprite->setScaleY(-1.0f * scale);
+//pSprite->setScaleX(scale);
+////_spriteDraw->setRotation(30.0f);
+////_spriteDraw->setOpacity(255);
+////_spriteDraw->setColor(Color3B(255, 128, 128));
+//auto scaleLeft = ScaleTo::create(0.2f, 1.1f, -1.1f);
+//auto scaleRight = ScaleTo::create(0.2f, 0.7f, -0.7f);
+//auto seqLeftRight = Sequence::create(scaleLeft, scaleRight, nullptr);
+//auto repeatSeqLeftRight = RepeatForever::create(seqLeftRight);
+//auto rot180 = RotateTo::create(1.0f, 180.0f);
+//auto rot360 = RotateTo::create(1.0f, 360.0f);
+//auto seqRot360 = Sequence::create(rot180, rot360, nullptr);
+//auto repeatSeqRot360 = RepeatForever::create(seqRot360);
+//_spriteDraw->runAction(repeatSeqRot360);
+//_spriteDraw->runAction(repeatSeqLeftRight);
