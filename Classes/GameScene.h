@@ -19,9 +19,11 @@ class GameScene : public cocos2d::Scene
 public:
 	GameScene();
 	~GameScene();
-    static cocos2d::Scene* createScene();
+	static cocos2d::Scene* createScene();
 
-	rapidjson::Document m_document; // Document is GenericDocument<UTF8<> > 
+	rapidjson::Document m_documentLetters;
+	rapidjson::Document m_document;
+
 	Entity* pEntity;
 	EntityManager* pEntityManager;
 	Letter* pLetter;
@@ -64,23 +66,28 @@ public:
 
 	std::shared_ptr<IconString> m_iconStringBonjour;
 
+	std::vector<Sprite*> m_spriteLetters;
+	std::vector<Icon*> m_iconLetters;
 
-
-    virtual bool init();
+	virtual bool init();
 	void update(float dt);
 	void shakeTheWorld(bool bStatus = true);
 	Sprite* createSpriteFromLabel(Label* pLabel);
 	std::vector<Sprite*> createSpriteArrFromLabel(Label* pLabel, const std::string& text);
+	std::vector<Sprite*> createSpriteArrFromString(const std::string& text);
+	std::vector<Icon*> createIconArrFromString(const std::string& text);
+	rapidjson::Document parseJSON(const std::string& filename);
+	int getIdxFromIconValue(std::vector<Icon*> iconLetters, const std::string value);
 
-    // a selector callback
-    void menuCloseCallback(Ref* pSender);
+	// a selector callback
+	void menuCloseCallback(Ref* pSender);
 	void menuPlayCallback(Ref* pSender);
 	bool onTouchBegan(cocos2d::Touch* touch, cocos2d::Event* event);
 	void onTouchMoved(cocos2d::Touch* touch, cocos2d::Event* event);
 	void onTouchEnded(cocos2d::Touch* touch, cocos2d::Event* event);
-    
-    // implement the "static create()" method manually
-    CREATE_FUNC(GameScene);
+
+	// implement the "static create()" method manually
+	CREATE_FUNC(GameScene);
 };
 
 #endif // __GAME_SCENE_H__

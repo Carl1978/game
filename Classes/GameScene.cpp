@@ -7,9 +7,6 @@
 #include "json/filereadstream.h"   // FileReadStream
 #include "json/encodedstream.h"    // EncodedInputStream
 #include <sstream>
-//#include <iostream>
-//#include <string>
-//#include <cstring>
 #include <iostream>
 #include <string>
 #include <locale>
@@ -28,12 +25,10 @@
 // Free fonts .ttf
 // https://www.fontspace.com/search/?q=bitmap
 
-
 USING_NS_CC;
 using namespace rapidjson;
 
 Vec2* Letter::wavePos;
-
 
 // convert from const* char to const wchar_t*
 std::wstring to_wstr(const char *mbstr)
@@ -120,17 +115,9 @@ std::string to_str(const wchar_t *wcstr)
 GameScene::GameScene() {
 	cocos2d::log("ctr...");
 
-	//std::shared_ptr<EntityManager> pEntityManager = std::make_shared<EntityManager>(this);
-	//std::shared_ptr<Entity> pEntity = std::make_shared<Entity>();
-	//std::shared_ptr<Letter> pLetter = std::make_shared<Letter>(this);
-	
 	Entity::currentID = 0;
 	Floor::total = 0;
 	Letter::T = Vec2(0, 0);
-
-	//pEntityManager = new EntityManager(this);
-	//pEntity = new Entity();
-	//pLetter = new Letter(this);
 
 	// produce true random numbers?!
 	//time_t theTime;
@@ -182,91 +169,45 @@ GameScene::~GameScene() {
 
 Scene* GameScene::createScene()
 {
-    return GameScene::create();
+	return GameScene::create();
 }
 
 // Print useful error message instead of segfaulting when files are not there.
 static void problemLoading(const char* filename)
 {
-    printf("Error while loading: %s\n", filename);
-    printf("Depending on how you compiled you might have to add 'Resources/' in front of filenames in GameSceneScene.cpp\n");
+	printf("Error while loading: %s\n", filename);
+	printf("Depending on how you compiled you might have to add 'Resources/' in front of filenames in GameSceneScene.cpp\n");
 }
 
 // on "init" you need to initialize your instance
 bool GameScene::init()
 {
-    //////////////////////////////
-    // 1. super init first
-    if ( !Scene::init() )
-    {
-        return false;
-    }
-
+	//////////////////////////////
+	// 1. super init first
+	if (!Scene::init())
+	{
+		return false;
+	}
 
 	// --------------------------------- ///
 
-	// default JSON filename
-	std::string strFilename("json/magyar.json");
-
-#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
-	// Works - reads correct json file UTF8 (ANSI)
-	//auto fileData = FileUtils::getInstance()->getDataFromFile("example.json");
-	//std::string content((const char *)fileData.getBytes(), fileData.getSize());
-	//m_document.Parse<0>(content.c_str());
-	//assert(m_document.IsObject());
-	//assert(m_document.HasMember("hello"));
-	//assert(m_document["hello"].IsString());
-
-	// Works - reads correct json file UTF16 (UNICODE)
-	auto fileData = FileUtils::getInstance()->getDataFromFile(strFilename);
-	std::string content((const char *)fileData.getBytes(), fileData.getSize());
-
-	StringStream bis(content.c_str());
-	EncodedInputStream<UTF16LE<>, StringStream> eis(bis); // wraps bis into eis
-	m_document.ParseStream<0, UTF16LE<> >(eis);  // Parses UTF-16 file into UTF-8 in memory
-
-	assert(m_document.IsObject());
-	//assert(m_document.HasMember("hello"));
-	//assert(m_document["hello"].IsString());
-#endif
-
-
-#if (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32)
-	// Works - reads correct json file UTF8 (ANSI)
-	//FILE *fp = fopen("example.json", "rb"); // non-Windows use "r"
-	//char readBuffer[65536];
-	//FileReadStream is(fp, readBuffer, sizeof(readBuffer));
-	//m_document.ParseStream(is);
-	//fclose(fp);
-
-	// Works - reads correct json file UTF16 (UNICODE)
-	FILE *fp = fopen(strFilename.c_str(), "rt+, ccs=UNICODE");
-	char readBuffer[256];
-	FileReadStream bis(fp, readBuffer, sizeof(readBuffer));
-	EncodedInputStream<UTF16LE<>, FileReadStream> eis(bis);  // wraps bis into eis
-	m_document.ParseStream<0, UTF16LE<> >(eis);  // Parses UTF-16 file into UTF-8 in memory
-	fclose(fp);
-#endif
-
+	m_documentLetters = parseJSON("json/letters.json");
+	m_document = parseJSON("json/magyar2.json");
 
 	// debug
 	char buff[256];
-	sprintf(buff, "m_document['magyar'].GetString() : %s", m_document["magyar"].GetString());
+	sprintf(buff, "m_documentLetters['latin'].GetString() : %s", m_documentLetters["latin"].GetString());
 	cocos2d::log(buff);
 	// --------------------------------- ///
-
 
 	//Director::getInstance()->setClearColor(Color4F(0.0f, 1.0f, 0.0f, 0.0f));
 	//LayerColor *_bgColor = LayerColor::create(Color4B(204, 230, 255, 255));
 	//LayerColor *_bgColor = LayerColor::create(Color4B(0, 0, 0, 255));
 	LayerColor *_bgColor = LayerColor::create(Color4B(60, 191, 240, 255));
 	this->addChild(_bgColor, -10);
-	/*LayerGradient *_bgColor2 = LayerGradient::create(Color4B(51, 119, 255, 255), Color4B(0, 60, 191, 240), Vec2(0.0f, 1.0f));
-	this->addChild(_bgColor2, -10);*/
 
-    auto visibleSize = Director::getInstance()->getVisibleSize();
-    Vec2 origin = Director::getInstance()->getVisibleOrigin();
-
+	auto visibleSize = Director::getInstance()->getVisibleSize();
+	Vec2 origin = Director::getInstance()->getVisibleOrigin();
 
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Register Touch Event
@@ -279,29 +220,28 @@ bool GameScene::init()
 
 	dispatcher->addEventListenerWithSceneGraphPriority(pListener, this);
 
+	/////////////////////////////
+	// 2. add a menu item with "X" image, which is clicked to quit the program
+	//    you may modify it.
 
-    /////////////////////////////
-    // 2. add a menu item with "X" image, which is clicked to quit the program
-    //    you may modify it.
+	// add a "close" icon to exit the progress. it's an autorelease object
+	auto closeItem = MenuItemImage::create(
+		"button-close64x64.png",
+		"button-close-select64x64.png",
+		CC_CALLBACK_1(GameScene::menuCloseCallback, this));
 
-    // add a "close" icon to exit the progress. it's an autorelease object
-    auto closeItem = MenuItemImage::create(
-                                           "button-close64x64.png",
-                                           "button-close-select64x64.png",
-                                           CC_CALLBACK_1(GameScene::menuCloseCallback, this));
-
-    if (closeItem == nullptr ||
-        closeItem->getContentSize().width <= 0 ||
-        closeItem->getContentSize().height <= 0)
-    {
-        problemLoading("'button-close64x64.png' and 'button-close-select64x64.png'");
-    }
-    else
-    {
-        float x = origin.x + visibleSize.width - closeItem->getContentSize().width/2 - 5;
+	if (closeItem == nullptr ||
+		closeItem->getContentSize().width <= 0 ||
+		closeItem->getContentSize().height <= 0)
+	{
+		problemLoading("'button-close64x64.png' and 'button-close-select64x64.png'");
+	}
+	else
+	{
+		float x = origin.x + visibleSize.width - closeItem->getContentSize().width / 2 - 5;
 		float y = origin.y + visibleSize.height - closeItem->getContentSize().height / 2 - 5 - 2;
-        closeItem->setPosition(Vec2(x,y));
-    }
+		closeItem->setPosition(Vec2(x, y));
+	}
 
 	// add a "play" icon to replay. it's an autorelease object
 	auto playItem = MenuItemImage::create(
@@ -322,208 +262,124 @@ bool GameScene::init()
 		playItem->setPosition(Vec2(x, y));
 	}
 
-    // create menu, it's an autorelease object
-    auto menu = Menu::create(closeItem, playItem, NULL);
-    menu->setPosition(Vec2::ZERO);
-    this->addChild(menu, 255);
+	// create menu, it's an autorelease object
+	auto menu = Menu::create(closeItem, playItem, NULL);
+	menu->setPosition(Vec2::ZERO);
+	this->addChild(menu, 255);
 
-    /////////////////////////////
-    // 3. add your codes below...
+	/////////////////////////////
+	// 3. add your codes below...
 
-    // add a label shows "Hello World"
-    // create and initialize a label
+	// add a label shows "Hello World"
+	// create and initialize a label
 
-    auto label = Label::createWithTTF("1 + 1?", "fonts/arial.ttf", 24);
-    if (label == nullptr)
-    {
-        problemLoading("'fonts/Marker Felt.ttf'");
-    }
-    else
-    {
-        // position the label on the center of the screen
-        label->setPosition(Vec2(origin.x + visibleSize.width/2,
-                                origin.y + visibleSize.height - label->getContentSize().height));
+	auto label = Label::createWithTTF("1 + 1?", "fonts/arial.ttf", 24);
+	if (label == nullptr)
+	{
+		problemLoading("'fonts/Marker Felt.ttf'");
+	}
+	else
+	{
+		// position the label on the center of the screen
+		label->setPosition(Vec2(origin.x + visibleSize.width / 2,
+			origin.y + visibleSize.height - label->getContentSize().height));
 
 		label->setTextColor(Color4B(255, 255, 255, 255));
-        // add the label as a child to this layer
-        this->addChild(label, 2);
-    }
-
-	//////////////////////////////////////////////////////////
-	//////////////////////////////////////////////////////////
-
-	// Create a label with given font
-	TTFConfig config("fonts/Good Unicorn - TTF.ttf", 64.0f);
-	//Label* pLabel= Label::createWithTTF(config, m_document["magyar_letter"].GetString(), cocos2d::TextHAlignment::CENTER);
-	Label* pLabel = Label::createWithTTF(config, m_document["magyar"].GetString(), cocos2d::TextHAlignment::CENTER);
-	pLabel->setTextColor(Color4B::WHITE);
-	pLabel->enableOutline(Color4B::BLACK, 4);
-
-	// create sprite from this label
-	Sprite* pNewSprite = createSpriteFromLabel(pLabel);
-	pNewSprite->setPosition(Vec2(200.0f, 200.0f));
-	addChild(pNewSprite, 500);
-
-	// create sprite vector array
-	/*std::vector<Sprite*> spriteArr = createSpriteArrFromLabel(pLabel, "Hello World");
-	Sprite* pNewSprite2 = spriteArr.at(0);
-	pNewSprite2->setPosition(Vec2(200.0f, 150.0f));
-	addChild(pNewSprite2, 500);*/
-
-	Label* pLabel2 = nullptr;
-	Sprite* pNewSprite2 = nullptr;
-	//std::string alphanum = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
-	//std::string alphanum = "abcdefghijklmnopqrstuvwxyz1234567890";
-	//std::string alphanum = "Ian0987654321";
-	std::string alphanum2 = m_document["magyar"].GetString();
-	const char* alphanum = m_document["magyar"].GetString();
-	wchar_t* uni = (wchar_t*)alphanum;
-	cocos2d::log("uni : %s", uni);
-
-
-	//char tmpArr[4];
-	//std::strcpy(tmpArr, alphanum);
-	
-
-	//std::string ss = std::string(alphanum, 1);
-	//cocos2d::log("ss : %s", ss);
-	//cocos2d::log("uni[1] : %s", uni[1]);
-	cocos2d::log("alphanum : %s", alphanum);
-	cocos2d::log("alphanum2 : %s", alphanum2);
-	//cocos2d::log("tmpArr[4] : %s", tmpArr);
-	
-
-	int wchars_num = MultiByteToWideChar(CP_UTF8, 0, alphanum2.c_str(), -1, NULL, 0);
-	wchar_t* wstr = new wchar_t[wchars_num];
-	cocos2d::log("wchars_num : %d", wchars_num);
-	MultiByteToWideChar(CP_UTF8, 0, alphanum2.c_str(), -1, wstr, wchars_num);
-	// do whatever with wstr
-	cocos2d::log("wstr : %s", wstr);
-	//delete[] wstr;
-
-	// TODO here
-	char cbuffer[256];
-	sprintf(cbuffer, "m_document['magyar'].GetString() : %s", m_document["magyar"].GetString());
-	cocos2d::log(m_document["magyar"].GetString());
-	cocos2d::log(cbuffer);
-
-	//// Prepare console output in Unicode
-	////_setmode(_fileno(stdout), 0x20000); //_O_U16TEXT);
-
-	//std::wcout << "Input Text:";
-	//std::cin >> cbuffer;
-
-	// convert to wstring
-	//std::string wordstr = m_document["magyar"].GetString();
-	//std::wstring wordstr = to_wstr(m_document["magyar"].GetString());
-	//std::wstring wstr1 = wordstr.substr(1, 2);
-	//std::string str1 = to_str(wordstr.c_str());
-	//std::string str1 = to_str(wstr1.c_str());
-
-	/*std::wcout << "Converted: " << wordstr << std::endl;
-	std::wcout << "wordstr.size() : " << wordstr.size() << std::endl;
-	std::wcout << "wstr1: " << wstr1 << std::endl;*/
-
-	/*cocos2d::log("Converted: %s", wordstr.c_str());
-	cocos2d::log("wordstr.size(): %d", wordstr.size());
-	cocos2d::log("str1: %s", str1.c_str());
-	cocos2d::log("str1.at(0): %c", str1.at(0));
-	cocos2d::log("str1.at(1): %c", str1.at(1));
-	cocos2d::log("str1.at(2): %c", str1.at(2));*/
-	
-	//std::vector<std::string> sArr;
-
-
-	// ----------------------------------------------- //
-	// special I wrote to check if we have an ASCII char or Unicode char (i.e. 2bytes)
-	// NOTE: in some cases this can be 32-bit 4bytes so may have to come back and add platform checking code here later!
-	//for (int pos = 0; pos < wordstr.size();)
-	//{
-	//	wchar_t c = wordstr.at(pos);
-	//	cocos2d::log("%c, %d", c, c);
-	//	// single char (in ASCII range)
-	//	if (c < 128) {
-	//		std::wstring ws = wordstr.substr(pos, 1);
-	//		std::string s = to_str(ws.c_str());
-	//		sArr.push_back(s);
-	//		cocos2d::log("s: %s", s.c_str());
-	//		pos++;
-	//	}
-	//	// double char needed (unicode range)
-	//	else {
-	//		std::wstring ws = wordstr.substr(pos, 2);
-	//		std::string s = to_str(ws.c_str());
-	//		sArr.push_back(s);
-	//		cocos2d::log("s: %s", s.c_str());
-	//		pos+=2;
-	//	}
-	//}
-
-	std::vector<std::string> sArr;
-	std::string wordstr = m_document["magyar"].GetString();
-
-	// special I wrote to check if we have an ASCII char or Unicode char (i.e. 2bytes)
-	// NOTE: in some cases this can be 32-bit 4bytes so may have to come back and add platform checking code here later!
-	// TODO: refactor into a nice neat helper function
-	for (int pos = 0; pos < wordstr.size();)
-	{
-		unsigned int c = wordstr.at(pos);
-		cocos2d::log("%c, %d", c, c);
-		// single char (in ASCII range)
-		if (c < 128) {
-			std::string s = wordstr.substr(pos, 1);
-			sArr.push_back(s);
-			cocos2d::log("s: %s", s.c_str());
-			pos++;
-		}
-		// double char needed (unicode range)
-		else {
-			std::string s = wordstr.substr(pos, 2);
-			sArr.push_back(s);
-			cocos2d::log("s: %s", s.c_str());
-			pos += 2;
-		}
+		// add the label as a child to this layer
+		this->addChild(label, 2);
 	}
-	// ----------------------------------------------- //
 
+	//////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////
 
-	std::vector<Sprite*> spriteArr;
+	// TESTS
 
+	//// Create a label with given font
+	//TTFConfig config("fonts/Good Unicorn - TTF.ttf", 64.0f);
+	//Label* pLabel = Label::createWithTTF(config, m_document["magyar"].GetString(), cocos2d::TextHAlignment::CENTER);
+	//pLabel->setTextColor(Color4B::WHITE);
+	//pLabel->enableOutline(Color4B::BLACK, 4);
+
+	//// create sprite from this label
+	//Sprite* pNewSprite = createSpriteFromLabel(pLabel);
+	//pNewSprite->setPosition(Vec2(200.0f, 200.0f));
+	//addChild(pNewSprite, 500);
+
+	// get sprite letters from our json obj loaded in
+	std::string stringLetters = m_documentLetters["alphabet"].GetString();
+	std::vector<Icon*> icons = createIconArrFromString(stringLetters);
+
+	m_iconLetters = icons;
+	m_iconLetters.at(0)->pSprite->setOpacity(128);
+
+	stringLetters = m_documentLetters["numbers"].GetString();
+	icons = createIconArrFromString(stringLetters);
+
+	m_iconLetters.insert(
+		m_iconLetters.end(),
+		icons.begin(),
+		icons.end()
+	);
+
+	stringLetters = m_documentLetters["latin"].GetString();
+	icons = createIconArrFromString(stringLetters);
+
+	m_iconLetters.insert(
+		m_iconLetters.end(),
+		icons.begin(),
+		icons.end()
+	);
+
+	stringLetters = m_documentLetters["punctuation"].GetString();
+	icons = createIconArrFromString(stringLetters);
+
+	m_iconLetters.insert(
+		m_iconLetters.end(),
+		icons.begin(),
+		icons.end()
+	);
+
+	// add to parent layer & position them somewhere on screen
+	/*Vec2 L = Vec2(32.0f, 90.0f);
+	for (Icon* i : m_iconLetters) {
+		if (i) {
+			i->pSprite->setPosition(L + i->pSprite->getPosition());
+			addChild(i->pSprite, 500);
+		}
+	}*/
+
+	// TODO: build a word based on icons and then add them to a new iconstring object (converyor belt)
+	// Useful for the wave moving icons / icons string
+	std::string alpha = m_document["magyar_letter"].GetString();//"z";//"*";//"W";
+	int idxLetter = getIdxFromIconValue(m_iconLetters, alpha);
+	m_pIconB = Icon::create(m_iconLetters.at(idxLetter)->value,
+		m_iconLetters.at(idxLetter)->pSprite,
+		Vec2(visibleSize.width*0.5f, visibleSize.height*0.5f));
+	this->addChild(m_pIconB->pSprite, 200);
+	cocos2d::log("m_pIconB->value : %s", m_pIconB->value.c_str());
+	cocos2d::log("m_pIconB->pSprite->getContentSize().width : %f", m_pIconB->pSprite->getContentSize().width);
+	cocos2d::log("m_pIconB->pSprite->getContentSize().height : %f", m_pIconB->pSprite->getContentSize().height);
+
+	/////////////////////////////////////////////////////////
+
+	// Useful for the questions at the top of screen.
+	// get string from our json obj loaded in
+	//std::string stringComputer = m_document["computer"].GetString();
+	std::string stringComputer = m_document["magyar"].GetString();
+	std::vector<Sprite*> spriteComputerLst = createSpriteArrFromString(stringComputer);
+	// add to parent layer & position them somewhere on screen
 	Vec2 P = Vec2(64.0f, 150.0f);
-	for (int i = 0; i < sArr.size(); i++) {
-		if (sArr[i].at(0) != 32) { // check we have a valid char (not space " " char)
-			pLabel2 = Label::createWithTTF(config, sArr[i].c_str(), cocos2d::TextHAlignment::CENTER);
-			pLabel2->setTextColor(Color4B::WHITE);
-			pLabel2->enableOutline(Color4B::BLACK, 6);
-
-			// create sprite from this label
-			pNewSprite2 = createSpriteFromLabel(pLabel2);
-			pNewSprite2->setScale(0.6f);
-			P.x += pNewSprite2->getContentSize().width * pNewSprite2->getScale();
-			//P.y += 5.0f;
-			pNewSprite2->setPosition(P);
-			pNewSprite2->setRotation(45.0f - rand()%90);
-			spriteArr.push_back(pNewSprite2);
-		}
-		else {
-			// for now assume space chars are equal to this width
-			P.x += 20.0f;
+	for (Sprite* s : spriteComputerLst) {
+		if (s) {
+			s->setPosition(P + s->getPosition());
+			addChild(s, 500);
 		}
 	}
-	
-	for (Sprite* spr : spriteArr) {
-		if (spr) {
-			addChild(spr, 500);
-		}
-	}
-	
-	delete[] wstr;
-	//////////////////////////////////////////////////////////
-	//////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////
 
 	auto spriteAir = Sprite::create("white8x8.png");
 	spriteAir->setOpacity(255);
-	spriteAir->setColor(Color3B(0,0,0));
+	spriteAir->setColor(Color3B(0, 0, 0));
 	Vec2 airScale = Vec2(visibleSize.width * (1.0f / 8.0f), visibleSize.height*0.5f * (1.0f / 8.0f));
 	spriteAir->setAnchorPoint(Vec2(0.5f, 0.0f));
 	spriteAir->setScaleX(airScale.x);
@@ -540,10 +396,10 @@ bool GameScene::init()
 	spriteWater->setScaleY(waterScale.y);
 	spriteWater->setPosition(Vec2(visibleSize.width * 0.5f, visibleSize.height*0.5f - 128.0f + 4.0f));
 	this->addChild(spriteWater, 100);
-	
+
 	bShake = false;
 
-//	pEntityManager->init();
+	//	pEntityManager->init();
 
 	float globalOffsetY = -20.0f;
 
@@ -607,47 +463,47 @@ bool GameScene::init()
 	seqJelly->retain();
 	rotateToLeft->retain();
 	rotateToRight->retain();
-	
+
 	// letter
 	/*pLetter->spawn("face64x64.png", Vec2(visibleSize.width*0.5f, visibleSize.height*0.5f));
 	pEntityManager->addEntity(pLetter);*/
 
 	int n = 0;
 	Letter* letter = nullptr;
-	
+
 	/*for (n = 0; n < 3; n++) {
 		letter = new Letter(this);
 		letter->spawn("B", 1, "white8x8.png", Vec2(200.0f + n * 320.0f, visibleSize.height*0.5f + n * 60));
 		pEntityManager->addEntity(letter);
 	}*/
 
-/*
-//////////////////////////////////
-//////////////////////////////////
-//////////////////////////////////
-//////////////////////////////////
-//////////////////////////////////
-// TODO: add this code back in - handles the letters creation!
-	std::string french = "Bon  Bon  jour  bononoj  Bon  on  Jour  Jourouru  Bonjour";
-	std::string s;// = std::string(1, french[3]);
-	int length = french.size();
-	float letterWidth = 12.0f;//16.0f;
-	//cocos2d::log("french[3]: %c", french[3]);
-	//cocos2d::log("s: %s", s.c_str());
-	int m = -1;
-	int i;
-	for (i = 0; i < 3; i++) {
-		for (n = 0; n <length; n++) {
-			s = std::string(1, french[n]);
-			if (s != " ") { // ignore white-space characters
-				letter = new Letter(this);
-				letter->spawn(s, i + 2, "white8x8.png", Vec2(200.0f + m * 320.0f + n*(letterWidth+4), visibleSize.height*0.55f - i * 60));
-				pEntityManager->addEntity(letter);
+	/*
+	//////////////////////////////////
+	//////////////////////////////////
+	//////////////////////////////////
+	//////////////////////////////////
+	//////////////////////////////////
+	// TODO: add this code back in - handles the letters creation!
+		std::string french = "Bon  Bon  jour  bononoj  Bon  on  Jour  Jourouru  Bonjour";
+		std::string s;// = std::string(1, french[3]);
+		int length = french.size();
+		float letterWidth = 12.0f;//16.0f;
+		//cocos2d::log("french[3]: %c", french[3]);
+		//cocos2d::log("s: %s", s.c_str());
+		int m = -1;
+		int i;
+		for (i = 0; i < 3; i++) {
+			for (n = 0; n <length; n++) {
+				s = std::string(1, french[n]);
+				if (s != " ") { // ignore white-space characters
+					letter = new Letter(this);
+					letter->spawn(s, i + 2, "white8x8.png", Vec2(200.0f + m * 320.0f + n*(letterWidth+4), visibleSize.height*0.55f - i * 60));
+					pEntityManager->addEntity(letter);
+				}
 			}
 		}
-	}
-*/
-	
+	*/
+
 	/*
 	Floor* floor = nullptr;
 	float width = visibleSize.width;
@@ -659,7 +515,7 @@ bool GameScene::init()
 		pEntityManager->addEntity(floor);
 	}
 	*/
-	
+
 	/*Sprite* spr = Sprite::create("./freeassets/image 1.png");
 	spr->setPosition(Vec2(visibleSize.width*0.5f, visibleSize.height*0.5f));
 	spr->setScaleX(2.0f);
@@ -685,17 +541,16 @@ bool GameScene::init()
 		for (int i = 0; i < 6; i++) {
 			waveSpr[j][i] = Sprite::create(filename);
 			waveSpr[j][i]->setPosition(Vec2(visibleSize.width*0.5f + (i - 2) * 256, visibleSize.height*0.5f));
-			this->addChild(waveSpr[j][i], 10-j);
+			this->addChild(waveSpr[j][i], 10 - j);
 			// run it and repeat it forever
 			//if(i == 2)
 			//waveSpr[i]->runAction(RepeatForever::create(animate->clone()));
 		}
 	}
 
-
 	// Boat
 	m_pSpriteBoat = Sprite::create("boat96x96.png");
-	m_pSpriteBoat->setPosition(Vec2(visibleSize.width*0.2f, visibleSize.height*0.5f + 256*0.5f - 96*0.5f));
+	m_pSpriteBoat->setPosition(Vec2(visibleSize.width*0.2f, visibleSize.height*0.5f + 256 * 0.5f - 96 * 0.5f));
 	this->addChild(m_pSpriteBoat, 10 - 4);
 
 	// Man
@@ -720,7 +575,6 @@ bool GameScene::init()
 	// Create Lamp to highlight the words
 	// Decide whether it's better to use letters of whole words
 
-
 	// TODO: add factory method for creating different types of derived entities.
 
 	// Create Boat Entity
@@ -736,36 +590,36 @@ bool GameScene::init()
 	//cocos2d::log("OUTSIDE : lst[0].use_count() : %d", lst[0].use_count());
 	////WORKS!!!
 
-	std::vector<Boat*> boatArr;
-	for (int n = 0; n < 4; n++) {
-		// create a boat and add to vector
-		Vec2 boatPos = Vec2(visibleSize.width*0.5f + n*64.0f,
-			visibleSize.height*0.5f + 256 * 0.5f - 96 * 0.5f);
-		m_pBoat = Boat::create("boat96x96.png", boatPos);
-		this->addChild(m_pBoat->pSprite, 300);
-		m_pBoat->pSprite->setOpacity(192);
-		m_pBoat->pSprite->setScale(0.5f);
-		boatArr.push_back(m_pBoat);
-	}
-	cocos2d::log("boatArr.size() : %d", boatArr.size());
-	
-	for (std::vector<Boat*>::iterator it = boatArr.begin(); it != boatArr.end(); it++) {
-		(*it)->pSprite->setRotation(float(floor(rand()%360)));
-	}
+	//std::vector<Boat*> boatArr;
+	//for (int n = 0; n < 4; n++) {
+	//	// create a boat and add to vector
+	//	Vec2 boatPos = Vec2(visibleSize.width*0.5f + n*64.0f,
+	//		visibleSize.height*0.5f + 256 * 0.5f - 96 * 0.5f);
+	//	m_pBoat = Boat::create("boat96x96.png", boatPos);
+	//	this->addChild(m_pBoat->pSprite, 300);
+	//	m_pBoat->pSprite->setOpacity(192);
+	//	m_pBoat->pSprite->setScale(0.5f);
+	//	boatArr.push_back(m_pBoat);
+	//}
+	//cocos2d::log("boatArr.size() : %d", boatArr.size());
 
-	std::vector<int> v = { 10,20,30,40 };
-	for (auto& i : v) {
-		i++;
-		cocos2d::log("i : %d", i);
-	}
+	//for (std::vector<Boat*>::iterator it = boatArr.begin(); it != boatArr.end(); it++) {
+	//	(*it)->pSprite->setRotation(float(floor(rand() % 360)));
+	//}
 
-	for (auto i : v) {
-		cocos2d::log("i : %d", i);
-	}
+	//std::vector<int> v = { 10,20,30,40 };
+	//for (auto& i : v) {
+	//	i++;
+	//	cocos2d::log("i : %d", i);
+	//}
+
+	//for (auto i : v) {
+	//	cocos2d::log("i : %d", i);
+	//}
 
 	// TODO:
 	// Add all the letters assets (aligned properly)
-	// Add JSON letters.json that holds array of objects (letters) i.e. 
+	// Add JSON letters.json that holds array of objects (letters) i.e.
 	// [
 	//		{
 	//			"icon": "A",
@@ -778,8 +632,8 @@ bool GameScene::init()
 	// ]
 
 	// create an icon "B"
-	m_pIconB = Icon::create("B.png", Vec2(visibleSize.width*0.5f, visibleSize.height*0.5f));
-	this->addChild(m_pIconB->pSprite, 200);
+	//m_pIconB = Icon::create("B.png", Vec2(visibleSize.width*0.5f, visibleSize.height*0.5f));
+	//this->addChild(m_pIconB->pSprite, 200);
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////////
 	// create an icon string "Bonjour"
@@ -788,24 +642,25 @@ bool GameScene::init()
 	//											this,
 	//											200); // 1
 	//////////////////////////////////////////////////////////////////////////////////////////////////////
-	m_iconStringBonjour = IconString::create(); // 2
-	m_iconStringBonjour->setScale(0.5f);
-	m_iconStringBonjour->spawn("Bonjour jour bon  bonjour", Vec2(100, 200), this, 200);
-	std::vector<Icon*> iconArr = m_iconStringBonjour->spawn("non", Vec2(100, 200 - 50), this, 200);
-	auto s = m_iconStringBonjour->spawnSprite("button-close-select64x64.png", Vec2(100, 200 - 100), this, 200);
-	auto rot = RotateTo::create(1.0f, 360.0f);
-	s->runAction(RepeatForever::create(rot));
-	iconArr.at(8)->pSprite->setScale(0.5f);
-	// make Bonjour effect
-	int i = 0;
-	for (Icon* pIcon : m_iconStringBonjour->iconArr) {
-		if (i % 2 && i < 7) {
-			//pIcon->pSprite->setVisible(false);
-			pIcon->pSprite->setOpacity(64);
-		}
-		pIcon->pSprite->setColor(Color3B(20, 20, 20));
-		i++;
-	}
+// TODO: need to change this to the new system - check other todo in code
+	//m_iconStringBonjour = IconString::create(); // 2
+	//m_iconStringBonjour->setScale(0.5f);
+	//m_iconStringBonjour->spawn("Bonjour jour bon  bonjour", Vec2(100, 200), this, 200);
+	//std::vector<Icon*> iconArr = m_iconStringBonjour->spawn("non", Vec2(100, 200 - 50), this, 200);
+	//auto s = m_iconStringBonjour->spawnSprite("button-close-select64x64.png", Vec2(100, 200 - 100), this, 200);
+	//auto rot = RotateTo::create(1.0f, 360.0f);
+	//s->runAction(RepeatForever::create(rot));
+	//iconArr.at(8)->pSprite->setScale(0.5f);
+	//// make Bonjour effect
+	//int i = 0;
+	//for (Icon* pIcon : m_iconStringBonjour->iconArr) {
+	//	if (i % 2 && i < 7) {
+	//		//pIcon->pSprite->setVisible(false);
+	//		pIcon->pSprite->setOpacity(64);
+	//	}
+	//	pIcon->pSprite->setColor(Color3B(20, 20, 20));
+	//	i++;
+	//}
 	//////////////////////////////////////////////////////////////////////////////////////////////////////
 	//m_iconStringBonjour = IconString::create(); // 3
 	//auto spr = m_iconStringBonjour->spawnSprite("B.png", Vec2(100, 100), this, 200);
@@ -814,7 +669,6 @@ bool GameScene::init()
 	//spr->setRotation(45.0f);
 	//m_iconStringBonjour->iconArr.at(1)->pSprite->setOpacity(128);
 	//////////////////////////////////////////////////////////////////////////////////////////////////////
-
 
 	/*cocos2d::log("m_boat.use_count() : %d", m_boat.use_count());
 	{
@@ -835,7 +689,6 @@ bool GameScene::init()
 		cocos2d::log("POST: m_boatArr[i].use_count() : %d", m_boatArr[i].use_count());
 	}*/
 
-
 	/*int max = 3;
 	m_pBoatArr = new std::shared_ptr<Boat>[max];
 	for (int i = 0; i < 3; i++) {
@@ -852,8 +705,6 @@ bool GameScene::init()
 	// not a good way!!!! Bad practice!
 	//m_pBoatArr = new std::shared_ptr<Boat>;
 	//m_pBoatArr->get()->sprite ...
-
-
 
 	/*Vec2 boatPos = Vec2(visibleSize.width*0.2f,
 						visibleSize.height*0.5f + 256 * 0.5f - 96 * 0.5f);
@@ -877,7 +728,7 @@ bool GameScene::init()
 	//	m_boat = pBoat2;
 	//	cocos2d::log("gBoat : use_count : %d", gBoat.use_count());
 	//	cocos2d::log("pBoat2 : use_count : %d", pBoat2.use_count());
-	//	
+	//
 	//	//cocos2d::log("---");
 	//	//auto myBoat = Boat::create("boat96x96.png");
 	//	//myBoat->pSprite->setPosition(Vec2(visibleSize.width*0.2f, visibleSize.height*0.5f + 256 * 0.5f - 96 * 0.5f));
@@ -893,7 +744,7 @@ bool GameScene::init()
 	// start update loop
 	scheduleUpdate();
 
-    return true;
+	return true;
 }
 
 void GameScene::update(float dt)
@@ -902,15 +753,15 @@ void GameScene::update(float dt)
 
 	Vec2 origin = Director::getInstance()->getVisibleOrigin();
 	Size visibleSize = Director::getInstance()->getVisibleSize();
-	
+
 	if (m_pSpriteLazer->getScaleY() >= (visibleSize.height * (1.0f / 8.0f) *  0.75f)) // 90% of full  size
 		bShake = true;
-	
+
 	shakeTheWorld(bShake);
 
-//	pEntityManager->process();
+	//	pEntityManager->process();
 
-	// move the water
+		// move the water
 	for (int j = 0; j < 3; j++) {
 		for (int i = 0; i < 6; i++) {
 			if (waveSpr[j][i] != nullptr) {
@@ -919,7 +770,7 @@ void GameScene::update(float dt)
 					visibleSize.height*0.5f + wavePos[j].y));
 			}
 		}
-		wavePos[j].x -= 4-j;
+		wavePos[j].x -= 4 - j;
 		if (wavePos[j].x < -256.0f) {
 			wavePos[j].x += 256.0f;
 		}
@@ -965,19 +816,17 @@ void GameScene::shakeTheWorld(bool bStatus) {
 
 void GameScene::menuCloseCallback(Ref* pSender)
 {
-    //Close the cocos2d-x game scene and quit the application
-    Director::getInstance()->end();
+	//Close the cocos2d-x game scene and quit the application
+	Director::getInstance()->end();
 
-    #if (CC_TARGET_PLATFORM == CC_PLATFORM_IOS)
-    exit(0);
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_IOS)
+	exit(0);
 #endif
 
-    /*To navigate back to native iOS screen(if present) without quitting the application  ,do not use Director::getInstance()->end() and exit(0) as given above,instead trigger a custom event created in RootViewController.mm as below*/
+	/*To navigate back to native iOS screen(if present) without quitting the application  ,do not use Director::getInstance()->end() and exit(0) as given above,instead trigger a custom event created in RootViewController.mm as below*/
 
-    //EventCustom customEndEvent("game_scene_close_event");
-    //_eventDispatcher->dispatchEvent(&customEndEvent);
-
-
+	//EventCustom customEndEvent("game_scene_close_event");
+	//_eventDispatcher->dispatchEvent(&customEndEvent);
 }
 
 void GameScene::menuPlayCallback(Ref* pSender)
@@ -1008,13 +857,13 @@ bool GameScene::onTouchBegan(cocos2d::Touch* touch, cocos2d::Event* event)
 	}
 	if (m_pSpriteLazer) {
 		Letter::T.y = 0.0f; // indicates we are firing laser! >= 0
-		
+
 		// glowing lazer beam fx
 		auto fadeTo = FadeTo::create(0.1f, 128.0f);
 		auto fadeTo2 = FadeTo::create(0.1f, 64.0f);
 		auto seqGlow = Sequence::create(fadeTo, fadeTo2, nullptr);
 		m_pSpriteLazer->runAction(RepeatForever::create(seqGlow));
-		
+
 		// growing lazer beam fx
 		auto scaleTo2 = ScaleTo::create(0.1f, 8.0f * 1.0f / 8.0f, visibleSize.height * 1.0f / 8.0f);
 		m_pSpriteLazer->runAction(scaleTo2);
@@ -1053,7 +902,7 @@ void GameScene::onTouchEnded(cocos2d::Touch* touch, cocos2d::Event* event)
 		m_pSpriteLazer->stopAllActions();
 		m_pSpriteLazer->setScaleX(1.0f * 1.0f / 8.0f);
 		m_pSpriteLazer->setScaleY(0.0f * 1.0f / 8.0f);
-		
+
 		// glowing lazer beam fx
 		m_pSpriteLazer->stopAllActions();
 		m_pSpriteLazer->setOpacity(0.0f);
@@ -1062,7 +911,7 @@ void GameScene::onTouchEnded(cocos2d::Touch* touch, cocos2d::Event* event)
 
 Sprite* GameScene::createSpriteFromLabel(Label* pLabel) {
 	if (pLabel == nullptr) { return nullptr; }
-	
+
 	Size pixelSize = Director::getInstance()->getWinSizeInPixels();
 	auto visibleSize = Director::getInstance()->getVisibleSize();
 	Size letterSize = pLabel->getContentSize() + Size(pLabel->getOutlineSize()*2.0f, pLabel->getOutlineSize()*2.0f);
@@ -1071,23 +920,23 @@ Sprite* GameScene::createSpriteFromLabel(Label* pLabel) {
 	RenderTexture* pRenderTexture;
 	Sprite* pSprite = nullptr;
 	Sprite* pSpriteContainer = Sprite::create();
-	
+
 	pRenderTexture = RenderTexture::create(letterSize.width, letterSize.height, Texture2D::PixelFormat::RGBA8888);
 	pRenderTexture->retain();
 	pRenderTexture->setKeepMatrix(true);
 	pRenderTexture->setVirtualViewport(Vec2(0, 0),
-										Rect(0, 0, visibleSize.width, visibleSize.height),
-										Rect(0, 0, pixelSize.width, pixelSize.height));
+		Rect(0, 0, visibleSize.width, visibleSize.height),
+		Rect(0, 0, pixelSize.width, pixelSize.height));
 
 	pSpriteContainer->addChild(pLabel, 0);
 	pLabel->setPosition(Vec2(letterSize.width*0.5f, letterSize.height*0.5f));
 	pLabel->setScaleY(-1.0f);
-	
+
 	pRenderTexture->beginWithClear(1, 1, 1, 0);
 	pSpriteContainer->visit();
 	pRenderTexture->end();
 	//pRenderTexture->saveToFile("test.png", Image::Format::PNG);
-	
+
 	pLabel->setScaleY(labelPrevScaleY);
 	pLabel->setPosition(labelPrevPos);
 	pSpriteContainer->removeChild(pLabel, false);
@@ -1139,6 +988,194 @@ std::vector<Sprite*> GameScene::createSpriteArrFromLabel(Label* pLabel, const st
 	return spriteArr;
 }
 
+std::vector<Sprite*> GameScene::createSpriteArrFromString(const std::string& text) {
+	std::vector<Sprite*> spriteArr;
+	Sprite* pSprite = nullptr;
+	Label* pLabel = nullptr;
+	// Create a label with given font
+	TTFConfig config("fonts/Good Unicorn - TTF.ttf", 64.0f);
+	std::vector<std::string> sArr;
+	size_t size = text.size();
+	if (size <= 0) { return spriteArr; }
+
+	// special I wrote to check if we have an ASCII char or Unicode char (i.e. 2bytes)
+	// NOTE: in some cases this can be 32-bit 4bytes so may have to come back and add platform checking code here later!
+	// TODO: refactor into a nice neat helper function
+	for (int pos = 0; pos < size;)
+	{
+		unsigned int c = text.at(pos);
+		cocos2d::log("%c, %d", c, c);
+		// single char (in ASCII range)
+		if (c < 128) {
+			std::string s = text.substr(pos, 1);
+			sArr.push_back(s);
+			cocos2d::log("s: %s", s.c_str());
+			pos++;
+		}
+		// double char needed (unicode range)
+		else {
+			std::string s = text.substr(pos, 2);
+			sArr.push_back(s);
+			cocos2d::log("s: %s", s.c_str());
+			pos += 2;
+		}
+	}
+
+	Vec2 P = Vec2(0.0f, 0.0f);
+	for (int i = 0; i < sArr.size(); i++) {
+		if (sArr[i].at(0) != 32) { // check we have a valid char (not space " " char)
+			pLabel = Label::createWithTTF(config, sArr[i].c_str(), cocos2d::TextHAlignment::CENTER);
+			pLabel->setTextColor(Color4B::WHITE);
+			pLabel->enableOutline(Color4B::BLACK, 6);
+
+			// create sprite from this label
+			pSprite = createSpriteFromLabel(pLabel);
+			pSprite->setScale(0.6f);
+			P.x += pSprite->getContentSize().width * pSprite->getScale();
+			//P.y += 5.0f;
+			pSprite->setPosition(P);
+			pSprite->setRotation(45.0f - rand() % 90);
+			spriteArr.push_back(pSprite);
+		}
+		else {
+			// for now assume space chars are equal to this width
+			P.x += 20.0f;
+		}
+	}
+
+	return spriteArr;
+}
+
+//std::vector<Icon*> iconArr;
+std::vector<Icon*> GameScene::createIconArrFromString(const std::string& text) {
+	std::vector<Icon*> iconArr;
+	Sprite* pSprite = nullptr;
+	Icon* pIcon = nullptr;
+	Label* pLabel = nullptr;
+	// Create a label with given font
+	TTFConfig config("fonts/Good Unicorn - TTF.ttf", 64.0f);
+	std::vector<std::string> sArr;
+	size_t size = text.size();
+	if (size <= 0) { return iconArr; }
+
+	// special I wrote to check if we have an ASCII char or Unicode char (i.e. 2bytes)
+	// NOTE: in some cases this can be 32-bit 4bytes so may have to come back and add platform checking code here later!
+	// TODO: refactor into a nice neat helper function
+	for (int pos = 0; pos < size;)
+	{
+		unsigned int c = text.at(pos);
+		cocos2d::log("%c, %d", c, c);
+		// single char (in ASCII range)
+		if (c < 128) {
+			std::string s = text.substr(pos, 1);
+			sArr.push_back(s);
+			cocos2d::log("s: %s", s.c_str());
+			pos++;
+		}
+		// double char needed (unicode range)
+		else {
+			std::string s = text.substr(pos, 2);
+			sArr.push_back(s);
+			cocos2d::log("s: %s", s.c_str());
+			pos += 2;
+		}
+	}
+
+	Vec2 P = Vec2(0.0f, 0.0f);
+	auto visibleSize = Director::getInstance()->getVisibleSize();
+	Vec2 origin = Director::getInstance()->getVisibleOrigin();
+	for (int i = 0; i < sArr.size(); i++) {
+		if (sArr[i].at(0) != 32) { // check we have a valid char (not space " " char)
+			pLabel = Label::createWithTTF(config, sArr[i].c_str(), cocos2d::TextHAlignment::CENTER);
+			pLabel->setTextColor(Color4B::WHITE);
+			pLabel->enableOutline(Color4B::BLACK, 6);
+
+			// create sprite from this label
+			pSprite = createSpriteFromLabel(pLabel);
+			pSprite->setScale(0.6f);
+			P.x += pSprite->getContentSize().width * pSprite->getScale();
+			//P.y += 5.0f;
+			pSprite->setPosition(P);
+			pSprite->setRotation(45.0f - rand() % 90);
+
+			pIcon = Icon::create(sArr[i], pSprite, Vec2(visibleSize.width*0.5f, visibleSize.height*0.5f));
+
+			iconArr.push_back(pIcon);
+		}
+		else {
+			// for now assume space chars are equal to this width
+			P.x += 20.0f;
+		}
+	}
+
+	return iconArr;
+}
+
+rapidjson::Document GameScene::parseJSON(const std::string& filename) {
+	rapidjson::Document m_doc; // Document is GenericDocument<UTF8<> >
+
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
+	// Works - reads correct json file UTF8 (ANSI)
+	//auto fileData = FileUtils::getInstance()->getDataFromFile("example.json");
+	//std::string content((const char *)fileData.getBytes(), fileData.getSize());
+	//m_doc.Parse<0>(content.c_str());
+	//assert(m_doc.IsObject());
+	//assert(m_doc.HasMember("hello"));
+	//assert(m_doc["hello"].IsString());
+
+	// Works - reads correct json file UTF16 (UNICODE)
+	auto fileData = FileUtils::getInstance()->getDataFromFile(filename);
+	std::string content((const char *)fileData.getBytes(), fileData.getSize());
+
+	StringStream bis(content.c_str());
+	EncodedInputStream<UTF16LE<>, StringStream> eis(bis); // wraps bis into eis
+	m_doc.ParseStream<0, UTF16LE<> >(eis);  // Parses UTF-16 file into UTF-8 in memory
+
+	assert(m_doc.IsObject());
+	//assert(m_doc.HasMember("hello"));
+	//assert(m_doc["hello"].IsString());
+#endif
+
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32)
+	// Works - reads correct json file UTF8 (ANSI)
+	//FILE *fp = fopen("example.json", "rb"); // non-Windows use "r"
+	//char readBuffer[65536]; // 64K
+	//FileReadStream is(fp, readBuffer, sizeof(readBuffer));
+	//m_doc.ParseStream(is);
+	//fclose(fp);
+
+	// Works - reads correct json file UTF16 (UNICODE)
+	FILE *fp = fopen(filename.c_str(), "rt+, ccs=UNICODE");
+	char readBuffer[65536]; // 64K
+	FileReadStream bis(fp, readBuffer, sizeof(readBuffer));
+	EncodedInputStream<UTF16LE<>, FileReadStream> eis(bis);  // wraps bis into eis
+	m_doc.ParseStream<0, UTF16LE<> >(eis);  // Parses UTF-16 file into UTF-8 in memory
+	fclose(fp);
+#endif
+
+	return m_doc;
+}
+
+int GameScene::getIdxFromIconValue(std::vector<Icon*> iconLetters, const std::string value) {
+	// create an icon "A" from sprite letters vector created above
+	Icon* pI = nullptr;
+	for (int i = 0; i < iconLetters.size(); i++) {
+		pI = iconLetters.at(i);
+		if (pI != nullptr) {
+			if (pI->value == value) {
+				return i;
+			}
+		}
+	}
+	return -1;
+}
+
+// ----------------------------------------------- //
+// create an icon "A" from sprite letters vector created above
+//m_pIconB = Icon::create("a", m_spriteLetters.at(0), Vec2(visibleSize.width*0.5f, visibleSize.height*0.5f));
+//this->addChild(m_pIconB->pSprite, 200);
+//cocos2d::log("m_pIconB->value : %s", m_pIconB->value.c_str());
+//
 //pSprite->setPosition(Vec2(250.0f, 250.0f));
 //float scale = 1.0f;
 //pSprite->setScaleY(-1.0f * scale);
@@ -1156,3 +1193,20 @@ std::vector<Sprite*> GameScene::createSpriteArrFromLabel(Label* pLabel, const st
 //auto repeatSeqRot360 = RepeatForever::create(seqRot360);
 //_spriteDraw->runAction(repeatSeqRot360);
 //_spriteDraw->runAction(repeatSeqLeftRight);
+
+//std::vector<int> dest{ 1,2,3,4 };
+//std::vector<int> src{ 5,6,7,8 };
+//
+//dest.insert(
+//	dest.end(),
+//	src.begin(),
+//	src.end()
+//);
+//
+//for (int i : dest) {
+//	cocos2d::log("dest : i : %d", i);
+//}
+//cocos2d::log("src.size() : %d", src.size());
+//for (int i : src) {
+//	cocos2d::log("src : i : %d", i);
+//}
