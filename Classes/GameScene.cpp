@@ -273,21 +273,21 @@ bool GameScene::init()
 	// add a label shows "Hello World"
 	// create and initialize a label
 
-	auto label = Label::createWithTTF("1 + 1?", "fonts/arial.ttf", 24);
-	if (label == nullptr)
-	{
-		problemLoading("'fonts/Marker Felt.ttf'");
-	}
-	else
-	{
-		// position the label on the center of the screen
-		label->setPosition(Vec2(origin.x + visibleSize.width / 2,
-			origin.y + visibleSize.height - label->getContentSize().height));
+	//auto label = Label::createWithTTF("1 + 1?", "fonts/arial.ttf", 24);
+	//if (label == nullptr)
+	//{
+	//	problemLoading("'fonts/Marker Felt.ttf'");
+	//}
+	//else
+	//{
+	//	// position the label on the center of the screen
+	//	label->setPosition(Vec2(origin.x + visibleSize.width / 2,
+	//		origin.y + visibleSize.height - label->getContentSize().height));
 
-		label->setTextColor(Color4B(255, 255, 255, 255));
-		// add the label as a child to this layer
-		this->addChild(label, 2);
-	}
+	//	label->setTextColor(Color4B(255, 255, 255, 255));
+	//	// add the label as a child to this layer
+	//	this->addChild(label, 2);
+	//}
 
 	//////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////
@@ -350,31 +350,67 @@ bool GameScene::init()
 
 	// TODO: build a word based on icons and then add them to a new iconstring object (converyor belt)
 	// Useful for the wave moving icons / icons string
-	std::string alpha = m_document["magyar_letter"].GetString();//"z";//"*";//"W";
-	int idxLetter = getIdxFromIconValue(m_iconLetters, alpha);
-	m_pIconB = Icon::create(m_iconLetters.at(idxLetter)->value,
-		m_iconLetters.at(idxLetter)->pSprite,
-		Vec2(visibleSize.width*0.5f, visibleSize.height*0.5f));
-	this->addChild(m_pIconB->pSprite, 200);
-	cocos2d::log("m_pIconB->value : %s", m_pIconB->value.c_str());
-	cocos2d::log("m_pIconB->pSprite->getContentSize().width : %f", m_pIconB->pSprite->getContentSize().width);
-	cocos2d::log("m_pIconB->pSprite->getContentSize().height : %f", m_pIconB->pSprite->getContentSize().height);
+	//std::string alpha = m_document["magyar_letter"].GetString();//"z";//"*";//"W";
+	//int idxLetter = getIdxFromIconValue(m_iconLetters, alpha);
+	//m_pIconB = Icon::create(m_iconLetters.at(idxLetter)->value,
+	//	m_iconLetters.at(idxLetter)->pSprite,
+	//	Vec2(visibleSize.width*0.5f, visibleSize.height*0.5f));
+	//this->addChild(m_pIconB->pSprite, 200);
+	//cocos2d::log("m_pIconB->value : %s", m_pIconB->value.c_str());
+	//cocos2d::log("m_pIconB->pSprite->getContentSize().width : %f", m_pIconB->pSprite->getContentSize().width);
+	//cocos2d::log("m_pIconB->pSprite->getContentSize().height : %f", m_pIconB->pSprite->getContentSize().height);
 
 	/////////////////////////////////////////////////////////
 
-	// Useful for the questions at the top of screen.
-	// get string from our json obj loaded in
-	//std::string stringComputer = m_document["computer"].GetString();
-	std::string stringComputer = m_document["magyar"].GetString();
-	std::vector<Sprite*> spriteComputerLst = createSpriteArrFromString(stringComputer);
-	// add to parent layer & position them somewhere on screen
-	Vec2 P = Vec2(64.0f, 150.0f);
-	for (Sprite* s : spriteComputerLst) {
-		if (s) {
-			s->setPosition(P + s->getPosition());
-			addChild(s, 500);
+	Icon* i = nullptr;
+
+	m_iconStringBonjour = IconString::create();
+	m_iconStringBonjour->setScale(0.5f);
+
+	std::string msg = m_document["magyar"].GetString();
+	m_iconStringBonjour->spawn(m_iconLetters, msg, Vec2(100, 200), this, 200);
+
+	std::string msg2 = m_document["computer"].GetString();
+	i = *(m_iconStringBonjour->iconArr.end() - 1);
+	i->pSprite->setOpacity(128);
+	m_iconStringBonjour->spawn(m_iconLetters, msg2, i->pSprite->getPosition() + Vec2(30.0f, 0.0f) * m_iconStringBonjour->getScale(), this, 200);
+
+	std::string msg3 = m_document["hello"].GetString();
+	i = *(m_iconStringBonjour->iconArr.end() - 1);
+	i->pSprite->setOpacity(96);
+	m_iconStringBonjour->spawn(m_iconLetters, msg3, i->pSprite->getPosition() + Vec2(30.0f, 0.0f) * m_iconStringBonjour->getScale(), this, 200);
+
+	for (Icon* pIcon : m_iconStringBonjour->iconArr) {
+		if (pIcon) {
+			addChild(pIcon->pSprite, 200);
 		}
 	}
+
+	// Useful for the questions at the top of screen.
+	m_iconStringQuestion = IconString::create();
+	m_iconStringQuestion->setScale(0.4f);
+
+	std::string question = "Thank you very much = ";
+	m_iconStringQuestion->spawn(m_iconLetters, question, Vec2(48.0f, visibleSize.height - 48.0f), this, 200);
+	for (auto pIcon : m_iconStringQuestion->iconArr) {
+		if (pIcon) {
+			pIcon->pSprite->setColor(Color3B::YELLOW);
+			addChild(pIcon->pSprite, 200);
+		}
+	}
+
+	// get string from our json obj loaded in
+	//std::string stringComputer = m_document["computer"].GetString();
+	//std::string stringComputer = m_document["magyar"].GetString();
+	//std::vector<Sprite*> spriteComputerLst = createSpriteArrFromString(stringComputer);
+	//// add to parent layer & position them somewhere on screen
+	//Vec2 P = Vec2(64.0f, 150.0f);
+	//for (Sprite* s : spriteComputerLst) {
+	//	if (s) {
+	//		s->setPosition(P + s->getPosition());
+	//		addChild(s, 500);
+	//	}
+	//}
 	/////////////////////////////////////////////////////////
 
 	auto spriteAir = Sprite::create("white8x8.png");

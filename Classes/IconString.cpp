@@ -1,4 +1,3 @@
-
 //  IconString.cpp
 //  game
 //
@@ -25,7 +24,9 @@ IconString::~IconString()
 			if (icon) {
 				if (pSceneParent != nullptr) {
 					if (icon->pSprite) {
-						pSceneParent->removeChild(icon->pSprite);
+						//pSceneParent->removeChild(icon->pSprite); // crashes here, I think we don't need to handle removing
+						//delete icon->pSprite;
+						//icon->pSprite = nullptr;
 					}
 				}
 				delete icon;
@@ -75,6 +76,79 @@ std::vector<Icon*> IconString::spawn(const std::string word, Vec2 P, Scene* pSce
 	}
 
 	return iconArr;
+}
+
+std::vector<Icon*> IconString::spawn(std::vector<Icon*> icons, const std::string text, Vec2 P, Scene* pSceneParent, int localZOrder) {
+	if (icons.size() <= 0) return iconArr;
+
+	std::vector<std::string> sArr;
+	size_t size = text.size();
+	if (size <= 0) { return iconArr; }
+
+	Icon* pIcon = nullptr;
+	Sprite* pSprite = nullptr;
+
+	// special I wrote to check if we have an ASCII char or Unicode char (i.e. 2bytes)
+	// NOTE: in some cases this can be 32-bit 4bytes so may have to come back and add platform checking code here later!
+	// TODO: refactor into a nice neat helper function
+	for (int pos = 0; pos < size;)
+	{
+		unsigned int c = text.at(pos);
+		//cocos2d::log("%c, %d", c, c);
+		// single char (in ASCII range)
+		if (c < 128) {
+			std::string s = text.substr(pos, 1);
+			sArr.push_back(s);
+			//cocos2d::log("s: %s", s.c_str());
+			pos++;
+		}
+		// double char needed (unicode range)
+		else {
+			std::string s = text.substr(pos, 2);
+			sArr.push_back(s);
+			//cocos2d::log("s: %s", s.c_str());
+			pos += 2;
+		}
+	}
+
+	auto visibleSize = Director::getInstance()->getVisibleSize();
+	Vec2 origin = Director::getInstance()->getVisibleOrigin();
+	for (int i = 0; i < sArr.size(); i++) {
+		if (sArr[i].at(0) != 32) { // check we have a valid char (not space " " char)
+			// create sprite from an element in icons array
+			int idxLetter = getIdxFromIconValue(icons, sArr[i]);
+
+			pSprite = Sprite::createWithTexture(icons.at(idxLetter)->pSprite->getTexture());
+			pSprite->setScale(this->scale);
+			pSprite->setPosition(P);
+			P.x += pSprite->getContentSize().width * pSprite->getScaleX();
+			//pSprite->setRotation(45.0f - rand() % 90);
+
+			pIcon = Icon::create(icons.at(idxLetter)->value, pSprite, P);
+
+			iconArr.push_back(pIcon);
+		}
+		else {
+			// for now assume space chars are equal to this width
+			P.x += 30.0f * this->scale;
+		}
+	}
+
+	return iconArr;
+}
+
+int IconString::getIdxFromIconValue(std::vector<Icon*> iconLetters, const std::string value) {
+	// create an icon "A" from sprite letters vector created above
+	Icon* pI = nullptr;
+	for (int i = 0; i < iconLetters.size(); i++) {
+		pI = iconLetters.at(i);
+		if (pI != nullptr) {
+			if (pI->value == value) {
+				return i;
+			}
+		}
+	}
+	return -1;
 }
 
 std::shared_ptr<IconString> IconString::create(const std::string word, Vec2 P, Scene* pSceneParent, int localZOrder) {

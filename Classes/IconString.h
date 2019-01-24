@@ -23,19 +23,21 @@ public:
 	Size sizeIconDefault;
 
 	IconString();
-    ~IconString();
-    void init(void);
+	~IconString();
+	void init(void);
 	Sprite* spawnSprite(const std::string filename = "B.png", Vec2 P = Vec2::ZERO, Scene* pSceneParent = nullptr, int localZOrder = 0);
 	std::vector<Icon*> spawn(const std::string word = "Bonjour", Vec2 P = Vec2::ZERO, Scene* pSceneParent = nullptr, int localZOrder = 0);
+	std::vector<Icon*> spawn(std::vector<Icon*> icons, const std::string text = "Bonjour", Vec2 P = Vec2::ZERO, Scene* pSceneParent = nullptr, int localZOrder = 0);
+	int getIdxFromIconValue(std::vector<Icon*> iconLetters, const std::string value);
 	static std::shared_ptr<IconString> create(const std::string word, Vec2 P = Vec2::ZERO, Scene* pSceneParent = nullptr, int localZOrder = 0);
 	static std::shared_ptr<IconString> create(void);
 	void setScale(float scale = 1.0f);
 	float getScale() {
 		return scale;
 	}
-    void deinit(void);
-    void process(void);
-    void draw(void);
+	void deinit(void);
+	void process(void);
+	void draw(void);
 };
 
 #endif /* defined(__game__IconString__) */
