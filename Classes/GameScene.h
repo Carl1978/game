@@ -80,6 +80,7 @@ public:
 	std::vector<Icon*> createIconArrFromString(const std::string& text);
 	rapidjson::Document parseJSON(const std::string& filename);
 	int getIdxFromIconValue(std::vector<Icon*> iconLetters, const std::string value);
+	void processPositionIconStringToWave(std::shared_ptr<IconString> iconString, int waveIdx = 0);
 
 	// a selector callback
 	void menuCloseCallback(Ref* pSender);

@@ -14,6 +14,7 @@ IconString::IconString() {
 	cocos2d::log("IconString ctr...");
 	sizeIconDefault = Size(32.0f, 32.0f);
 	scale = 1.0f;
+	width = 0.0f;
 }
 
 IconString::~IconString()
@@ -25,6 +26,7 @@ IconString::~IconString()
 				if (pSceneParent != nullptr) {
 					if (icon->pSprite) {
 						//pSceneParent->removeChild(icon->pSprite); // crashes here, I think we don't need to handle removing
+						// TODO: something is not getting freed properly!!!!!! Test by restarting each time! May have to turnn off code blocks to locate memory  leak??!!
 						//delete icon->pSprite;
 						//icon->pSprite = nullptr;
 					}
@@ -156,6 +158,10 @@ std::vector<Icon*> IconString::spawn(std::vector<Icon*> icons, const std::string
 		}
 	}
 
+	// set the current total width of this icon string
+	width = getwidth();
+	cocos2d::log("IconString :: width : %f", width);
+
 	return iconArr;
 }
 
@@ -193,6 +199,28 @@ void IconString::setScale(float scale) {
 			pIcon->pSprite->setScale(scale);
 		}
 	}
+}
+
+// TODO: not accurate because the first and last positions don't take into consideration the width1*0.5f & width2*0.5f
+float IconString::getwidth(void) {
+	float smallest = -1.0f, biggest = -1.0f;
+	if (iconArr.size() > 0) {
+		Icon* pIcon = nullptr;
+		float x;
+		for (Icon* pIcon : iconArr) {
+			if (pIcon) {
+				x = pIcon->pSprite->getPosition().x;
+				if (smallest < 0 || smallest > x) {
+					smallest = x;
+				}
+				if (biggest < 0 || biggest < x) {
+					biggest = x;
+				}
+			}
+		}
+	}
+
+	return biggest - smallest;
 }
 
 void IconString::init(void) {

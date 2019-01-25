@@ -26,7 +26,7 @@ Sprite* Icon::spawn(const std::string filename, Vec2 P) {
 	Entity::spawn(P);
 
 	pSprite = Sprite::create(filename);
-	pos = P;
+	pos = startPos = P;
 	pSprite->setPosition(P);
 	type = "Icon";
 	value = "";
@@ -37,7 +37,7 @@ Sprite* Icon::spawn(const std::string filename, Vec2 P) {
 Sprite* Icon::spawn(const std::string& val, Sprite* pSpr, Vec2 P) {
 	Entity::spawn(P);
 
-	pos = P;
+	pos = startPos = P;
 	pSprite = pSpr;
 	if (pSprite != nullptr) {
 		pSprite->setPosition(P);

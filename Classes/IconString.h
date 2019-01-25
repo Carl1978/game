@@ -21,6 +21,7 @@ public:
 	Scene* pSceneParent;
 	std::vector<Icon*> iconArr;
 	Size sizeIconDefault;
+	float width;
 
 	IconString();
 	~IconString();
@@ -35,6 +36,7 @@ public:
 	float getScale() {
 		return scale;
 	}
+	float getwidth(void);
 	void deinit(void);
 	void process(void);
 	void draw(void);

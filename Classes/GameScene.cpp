@@ -407,7 +407,7 @@ bool GameScene::init()
 		msg += " ";
 	}
 
-	m_iconStringBelt1->spawn(m_iconLetters, msg, Vec2(100, 200), this, 200);
+	m_iconStringBelt1->spawn(m_iconLetters, msg, Vec2(0.0f, 140.0f), this, 200);
 
 	for (Icon* pIcon : m_iconStringBelt1->iconArr) {
 		if (pIcon) {
@@ -419,7 +419,7 @@ bool GameScene::init()
 	m_iconStringQuestion = IconString::create();
 	m_iconStringQuestion->setScale(0.4f);
 
-	std::string question = "Thank you very much = ";
+	std::string question = "Thank you very much = {close}";
 	m_iconStringQuestion->spawn(m_iconLetters, question, Vec2(48.0f, visibleSize.height - 48.0f), this, 200);
 
 	for (auto pIcon : m_iconStringQuestion->iconArr) {
@@ -827,7 +827,7 @@ void GameScene::update(float dt)
 
 	//	pEntityManager->process();
 
-		// move the water
+	// move the water
 	for (int j = 0; j < 3; j++) {
 		for (int i = 0; i < 6; i++) {
 			if (waveSpr[j][i] != nullptr) {
@@ -862,6 +862,8 @@ void GameScene::update(float dt)
 	//	m_iconStringBonjour.reset();
 	//	cocos2d::log("m_iconStringBonjour.use_count() : %d", m_iconStringBonjour.use_count());
 	//}
+
+	processPositionIconStringToWave(m_iconStringBelt1, 0);
 
 	m_seq++;
 	m_cyc++;
@@ -1197,7 +1199,7 @@ rapidjson::Document GameScene::parseJSON(const std::string& filename) {
 	EncodedInputStream<UTF16LE<>, StringStream> eis(bis); // wraps bis into eis
 	m_doc.ParseStream<0, UTF16LE<> >(eis);  // Parses UTF-16 file into UTF-8 in memory
 
-	assert(m_doc.IsObject());
+	//assert(m_doc.IsObject());
 	//assert(m_doc.HasMember("hello"));
 	//assert(m_doc["hello"].IsString());
 #endif
@@ -1234,6 +1236,43 @@ int GameScene::getIdxFromIconValue(std::vector<Icon*> iconLetters, const std::st
 		}
 	}
 	return -1;
+}
+
+// TODO: wave should be an object i.e. Wave* pWave
+void GameScene::processPositionIconStringToWave(std::shared_ptr<IconString> iconString, int waveIdx) {
+	auto visibleSize = Director::getInstance()->getVisibleSize();
+	Vec2 origin = Director::getInstance()->getVisibleOrigin();
+	Vec2 P;
+
+	for (Icon* pIcon : iconString->iconArr) {
+		P = pIcon->pos;
+
+		P.x -= 4 - waveIdx;
+		// TODO: wrap-around should be based on the total length of text icon string, but will change dynamically
+		if (P.x < -256.0f) {
+			P.x += (256.0f + iconString->width);
+		}
+		P.y = pIcon->startPos.y + cos((m_seq + waveIdx*20.0f)*0.05f) * 4.0f;
+
+		pIcon->pos = P;
+		pIcon->pSprite->setPosition(P);
+	}
+
+	//// debug for reference // TODO: delete later
+	//for (int j = 0; j < 3; j++) {
+	//	for (int i = 0; i < 6; i++) {
+	//		if (waveSpr[j][i] != nullptr) {
+	//			Vec2 pos = waveSpr[j][i]->getPosition();
+	//			waveSpr[j][i]->setPosition(Vec2(visibleSize.width*0.5f + (i - 2) * 256 + wavePos[j].x,
+	//				visibleSize.height*0.5f + wavePos[j].y));
+	//		}
+	//	}
+	//	wavePos[j].x -= 4 - j;
+	//	if (wavePos[j].x < -256.0f) {
+	//		wavePos[j].x += 256.0f;
+	//	}
+	//	wavePos[j].y = cos((m_seq + j*20.0f)*0.05f) * 4.0f;
+	//}
 }
 
 // ----------------------------------------------- //
