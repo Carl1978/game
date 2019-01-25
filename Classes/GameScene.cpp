@@ -9,10 +9,10 @@
 #include <sstream>
 #include <iostream>
 #include <string>
-#include <locale>
-#include <fcntl.h>
-#include <io.h>
-#include <cstring>
+//#include <locale>
+//#include <fcntl.h>
+//#include <io.h>
+//#include <cstring>
 
 // Free Assets (will add in credits)
 // https://bayat.itch.io/platform-game-assets
@@ -192,12 +192,46 @@ bool GameScene::init()
 	// --------------------------------- ///
 
 	m_documentLetters = parseJSON("json/letters.json");
-	m_document = parseJSON("json/magyar2.json");
+	m_document = parseJSON("json/magyar.json");
+	//m_document = parseJSON("json/magyar2.json");
 
 	// debug
-	char buff[256];
-	sprintf(buff, "m_documentLetters['latin'].GetString() : %s", m_documentLetters["latin"].GetString());
-	cocos2d::log(buff);
+	//char buff[256];
+	//sprintf(buff, "m_documentLetters['sprites'].GetString() : %s", m_documentLetters["sprites"].GetString());
+	//cocos2d::log(buff);
+
+	//const rapidjson::Value& a = m_documentLetters["sprites"];
+	//for (rapidjson::Value::ConstMemberIterator iter = a.MemberBegin(); iter != a.MemberEnd(); ++iter) {
+	//	const char *name = iter->name.GetString();
+	//	std::string filename = iter->value.GetString();
+	//	cocos2d::log("** name : %s : %s", name, filename.c_str());
+
+		//if (strcmp(name, "id") == 0) {
+		//	int id = iter->value.GetInt();
+		//	cocos2d::log("value id : %d", id);
+		//}
+		//else if (strcmp(name, "type") == 0) {
+		//	const char *type = iter->value.GetString();
+		//	cocos2d::log("value type : %s", type);
+		//}
+		//else if (strcmp(name, "text") == 0) {
+		//	const char *text = iter->value.GetString();
+		//	cocos2d::log("value text : %s", text);
+		//}
+		//else if (strcmp(name, "lang") == 0) {
+		//	const char *lang = iter->value.GetString();
+		//	cocos2d::log("value lang : %s", lang);
+		//}
+		//else if (strcmp(name, "idlst") == 0) {
+		//	// Using a reference for consecutive access is handy and faster.
+		//	//const rapidjson::Value& a = _document["phrase1"];
+		//	const rapidjson::Value& b = a["idlst"];
+		//	//const rapidjson::Value& v = iter->value;
+		//	assert(b.IsArray());
+		//	for (SizeType i = 0; i < b.Size(); i++) // Uses SizeType instead of size_t
+		//		cocos2d::log("value idlst : a[%d] = %d\n", i, b[i].GetInt());
+		//}
+	//}
 	// --------------------------------- ///
 
 	//Director::getInstance()->setClearColor(Color4F(0.0f, 1.0f, 0.0f, 0.0f));
@@ -307,37 +341,28 @@ bool GameScene::init()
 
 	// get sprite letters from our json obj loaded in
 	std::string stringLetters = m_documentLetters["alphabet"].GetString();
-	std::vector<Icon*> icons = createIconArrFromString(stringLetters);
+	stringLetters += m_documentLetters["numbers"].GetString();
+	stringLetters += m_documentLetters["latin"].GetString();
+	stringLetters += m_documentLetters["punctuation"].GetString();
+	m_iconLetters = createIconArrFromString(stringLetters);
 
-	m_iconLetters = icons;
 	m_iconLetters.at(0)->pSprite->setOpacity(128);
 
-	stringLetters = m_documentLetters["numbers"].GetString();
-	icons = createIconArrFromString(stringLetters);
-
-	m_iconLetters.insert(
-		m_iconLetters.end(),
-		icons.begin(),
-		icons.end()
-	);
-
-	stringLetters = m_documentLetters["latin"].GetString();
-	icons = createIconArrFromString(stringLetters);
-
-	m_iconLetters.insert(
-		m_iconLetters.end(),
-		icons.begin(),
-		icons.end()
-	);
-
-	stringLetters = m_documentLetters["punctuation"].GetString();
-	icons = createIconArrFromString(stringLetters);
-
-	m_iconLetters.insert(
-		m_iconLetters.end(),
-		icons.begin(),
-		icons.end()
-	);
+	Icon* pIcon = nullptr;
+	const rapidjson::Value& a = m_documentLetters["sprites"];
+	for (rapidjson::Value::ConstMemberIterator iter = a.MemberBegin(); iter != a.MemberEnd(); ++iter) {
+		std::string name = iter->name.GetString();
+		std::string filename = iter->value.GetString();
+		cocos2d::log("** name : %s : %s", name.c_str(), filename.c_str());
+		pIcon = Icon::create(filename, Vec2(100, 100));
+		pIcon->value = name;
+		//pSprite->setScale(0.6f);
+		//P.x += pSprite->getContentSize().width * pSprite->getScale();
+		////P.y += 5.0f;
+		//pSprite->setPosition(P);
+		//pSprite->setRotation(45.0f - rand() % 90);
+		m_iconLetters.push_back(pIcon);
+	}
 
 	// add to parent layer & position them somewhere on screen
 	/*Vec2 L = Vec2(32.0f, 90.0f);
@@ -362,25 +387,29 @@ bool GameScene::init()
 
 	/////////////////////////////////////////////////////////
 
-	Icon* i = nullptr;
+	m_iconStringBelt1 = IconString::create();
+	m_iconStringBelt1->setScale(0.5f);
 
-	m_iconStringBonjour = IconString::create();
-	m_iconStringBonjour->setScale(0.5f);
+	/*std::string msg = m_document["magyar"].GetString();
+	msg += "{bird}{close} Hi!{bird}";
+	msg += " ";
+	msg += m_document["computer"].GetString();
+	msg += " ";
+	msg += m_document["hello"].GetString();*/
 
-	std::string msg = m_document["magyar"].GetString();
-	m_iconStringBonjour->spawn(m_iconLetters, msg, Vec2(100, 200), this, 200);
+	std::string msg = "";
+	const rapidjson::Value& doc = m_document;
+	for (rapidjson::Value::ConstMemberIterator iter = doc.MemberBegin(); iter != doc.MemberEnd(); ++iter) {
+		std::string name = iter->name.GetString();
+		std::string text = iter->value.GetString();
+		//cocos2d::log("** name : text => %s : %s", name.c_str(), text.c_str());
+		msg += text;
+		msg += " ";
+	}
 
-	std::string msg2 = m_document["computer"].GetString();
-	i = *(m_iconStringBonjour->iconArr.end() - 1);
-	i->pSprite->setOpacity(128);
-	m_iconStringBonjour->spawn(m_iconLetters, msg2, i->pSprite->getPosition() + Vec2(30.0f, 0.0f) * m_iconStringBonjour->getScale(), this, 200);
+	m_iconStringBelt1->spawn(m_iconLetters, msg, Vec2(100, 200), this, 200);
 
-	std::string msg3 = m_document["hello"].GetString();
-	i = *(m_iconStringBonjour->iconArr.end() - 1);
-	i->pSprite->setOpacity(96);
-	m_iconStringBonjour->spawn(m_iconLetters, msg3, i->pSprite->getPosition() + Vec2(30.0f, 0.0f) * m_iconStringBonjour->getScale(), this, 200);
-
-	for (Icon* pIcon : m_iconStringBonjour->iconArr) {
+	for (Icon* pIcon : m_iconStringBelt1->iconArr) {
 		if (pIcon) {
 			addChild(pIcon->pSprite, 200);
 		}
@@ -392,6 +421,7 @@ bool GameScene::init()
 
 	std::string question = "Thank you very much = ";
 	m_iconStringQuestion->spawn(m_iconLetters, question, Vec2(48.0f, visibleSize.height - 48.0f), this, 200);
+
 	for (auto pIcon : m_iconStringQuestion->iconArr) {
 		if (pIcon) {
 			pIcon->pSprite->setColor(Color3B::YELLOW);

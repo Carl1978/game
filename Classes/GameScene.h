@@ -66,6 +66,7 @@ public:
 
 	std::shared_ptr<IconString> m_iconStringBonjour;
 	std::shared_ptr<IconString> m_iconStringQuestion;
+	std::shared_ptr<IconString> m_iconStringBelt1;
 
 	std::vector<Sprite*> m_spriteLetters;
 	std::vector<Icon*> m_iconLetters;

@@ -18,13 +18,13 @@ USING_NS_CC;
 class Boat : public Entity {
 public:
 	Boat();
-    ~Boat();
-    void init(void);
+	~Boat();
+	void init(void);
 	Sprite* spawn(const std::string filename = "HelloWorld.png", Vec2 P = Vec2::ZERO);
-	static Boat* Boat::create(const std::string filename = "HelloWorld.png", Vec2 P = Vec2::ZERO);
-    void deinit(void);
-    void process(void);
-    void draw(void);
+	static Boat* create(const std::string filename = "HelloWorld.png", Vec2 P = Vec2::ZERO);
+	void deinit(void);
+	void process(void);
+	void draw(void);
 };
 
 #endif /* defined(__game__Boat__) */

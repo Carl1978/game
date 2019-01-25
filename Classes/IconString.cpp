@@ -87,6 +87,8 @@ std::vector<Icon*> IconString::spawn(std::vector<Icon*> icons, const std::string
 
 	Icon* pIcon = nullptr;
 	Sprite* pSprite = nullptr;
+	bool bVar = false;
+	std::string sValue = "";
 
 	// special I wrote to check if we have an ASCII char or Unicode char (i.e. 2bytes)
 	// NOTE: in some cases this can be 32-bit 4bytes so may have to come back and add platform checking code here later!
@@ -97,8 +99,28 @@ std::vector<Icon*> IconString::spawn(std::vector<Icon*> icons, const std::string
 		//cocos2d::log("%c, %d", c, c);
 		// single char (in ASCII range)
 		if (c < 128) {
-			std::string s = text.substr(pos, 1);
-			sArr.push_back(s);
+			if (bVar == true) { // check for variable (i.e. we are looking for a whole string for a sprite image perhaps)
+				if (c == 125) { // }
+					bVar = false;
+					sArr.push_back(sValue);
+					pos++;
+					//cocos2d::log("sValue : %s", sValue.c_str());
+					sValue = "";
+					continue;
+				}
+				else {
+					std::string s = text.substr(pos, 1);
+					sValue += s;
+				}
+			}
+			else if (c == 123) { // {
+				bVar = true;
+			}
+
+			if (!bVar) {
+				std::string s = text.substr(pos, 1);
+				sArr.push_back(s);
+			}
 			//cocos2d::log("s: %s", s.c_str());
 			pos++;
 		}

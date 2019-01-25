@@ -23,7 +23,7 @@ public:
 	void init(void);
 	Sprite* spawn(const std::string filename = "HelloWorld.png", Vec2 P = Vec2::ZERO);
 	Sprite* spawn(const std::string& val, Sprite* pSpr, Vec2 P = Vec2::ZERO);
-	static Icon* Icon::create(const std::string filename = "HelloWorld.png", Vec2 P = Vec2::ZERO);
+	static Icon* create(const std::string filename = "HelloWorld.png", Vec2 P = Vec2::ZERO);
 	static Icon* create(const std::string& val, Sprite* pSpr, Vec2 P = Vec2::ZERO);
 	void deinit(void);
 	void process(void);
