@@ -9,12 +9,17 @@
 
 USING_NS_CC;
 
+int IconString::idIcon;
+int IconString::idWord;
+
 IconString::IconString() {
 	// TODO:
 	cocos2d::log("IconString ctr...");
 	sizeIconDefault = Size(32.0f, 32.0f);
 	scale = 1.0f;
 	width = 0.0f;
+	IconString::idIcon = 0;
+	IconString::idWord = 0;
 }
 
 IconString::~IconString()
@@ -29,6 +34,8 @@ IconString::~IconString()
 						// TODO: something is not getting freed properly!!!!!! Test by restarting each time! May have to turnn off code blocks to locate memory  leak??!!
 						//delete icon->pSprite;
 						//icon->pSprite = nullptr;
+						//int children = pSceneParent->getChildrenCount();
+						//cocos2d::log("children : %d", children);
 					}
 				}
 				delete icon;
@@ -87,6 +94,12 @@ std::vector<Icon*> IconString::spawn(std::vector<Icon*> icons, const std::string
 	size_t size = text.size();
 	if (size <= 0) { return iconArr; }
 
+	// Create words list (NOTE: idx is the id)
+	m_words = split(text, ' ');
+	for (auto s : m_words) {
+		cocos2d::log("s : words : %s", s.c_str());
+	}
+
 	Icon* pIcon = nullptr;
 	Sprite* pSprite = nullptr;
 	bool bVar = false;
@@ -141,20 +154,25 @@ std::vector<Icon*> IconString::spawn(std::vector<Icon*> icons, const std::string
 		if (sArr[i].at(0) != 32) { // check we have a valid char (not space " " char)
 			// create sprite from an element in icons array
 			int idxLetter = getIdxFromIconValue(icons, sArr[i]);
-
 			pSprite = Sprite::createWithTexture(icons.at(idxLetter)->pSprite->getTexture());
+			//pSprite = Sprite::createWithTexture(icons.at(0)->pSprite->getTexture()); // DEBUG
+			//pSprite = Sprite::create("boat96x96.png"); // DEBUG
 			pSprite->setScale(this->scale);
 			pSprite->setPosition(P);
 			P.x += pSprite->getContentSize().width * pSprite->getScaleX();
 			//pSprite->setRotation(45.0f - rand() % 90);
 
 			pIcon = Icon::create(icons.at(idxLetter)->value, pSprite, P);
+			pIcon->idWord = IconString::idWord;
+			pIcon->id = IconString::idIcon;
+			IconString::idIcon++;
 
 			iconArr.push_back(pIcon);
 		}
 		else {
 			// for now assume space chars are equal to this width
 			P.x += 30.0f * this->scale;
+			IconString::idWord++; // ready for next word
 		}
 	}
 
@@ -238,3 +256,22 @@ void IconString::process(void) {
 void IconString::draw(void) {
 	// TODO:
 }
+
+std::vector<std::string> IconString::split(const std::string& s, char delimiter)
+{
+	std::vector<std::string> tokens;
+	std::string token;
+	std::istringstream tokenStream(s);
+	while (std::getline(tokenStream, token, delimiter))
+	{
+		tokens.push_back(token);
+	}
+	return tokens;
+}
+
+// TODO: words should fade in and fade out at the end of the screen LHS & RHS
+//	// glowing lazer beam fx
+//	auto fadeTo = FadeTo::create(0.1f, 128.0f);
+//	auto fadeTo2 = FadeTo::create(0.1f, 64.0f);
+//	auto seqGlow = Sequence::create(fadeTo, fadeTo2, nullptr);
+//	m_pSpriteLazer->runAction(RepeatForever::create(seqGlow));

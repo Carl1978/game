@@ -17,7 +17,7 @@ USING_NS_CC;
 
 class Icon : public Entity {
 public:
-	int wordId;
+	int idWord;
 	std::string value;
 	Point startPos;
 	Icon();

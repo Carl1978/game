@@ -55,6 +55,9 @@ public:
 	Sprite* m_pSpriteBoat;
 	Sprite* m_pSpriteMan;
 	DrawNode* m_pPolygon;
+	DrawNode* m_pPolygonLine;
+	bool m_bShout;
+	int m_stateUpdate;
 
 	Boat* m_pBoat;
 	std::shared_ptr<Boat> m_boat;
@@ -64,12 +67,15 @@ public:
 	Icon* m_pIconB;
 	std::shared_ptr<Icon> m_iconArr[7];
 
-	std::shared_ptr<IconString> m_iconStringBonjour;
 	std::shared_ptr<IconString> m_iconStringQuestion;
+	std::shared_ptr<IconString> m_iconStringAnswer;
 	std::shared_ptr<IconString> m_iconStringBelt1;
+	std::shared_ptr<IconString> m_iconStringBelt2;
+	std::shared_ptr<IconString> m_iconStringBelt3;
 
 	std::vector<Sprite*> m_spriteLetters;
 	std::vector<Icon*> m_iconLetters;
+	std::vector<std::string> m_phrases;
 
 	virtual bool init();
 	void update(float dt);
@@ -81,6 +87,10 @@ public:
 	rapidjson::Document parseJSON(const std::string& filename);
 	int getIdxFromIconValue(std::vector<Icon*> iconLetters, const std::string value);
 	void processPositionIconStringToWave(std::shared_ptr<IconString> iconString, int waveIdx = 0);
+	void processPositionIconStringToPos(std::shared_ptr<IconString> iconString, Vec2 pos, Vec2 offset = Vec2::ZERO);
+	void processLightBeamIconStringWord(DrawNode* m_pLightBeam, std::shared_ptr<IconString> iconString);
+	int getLightBeamIconStringWord(DrawNode* m_pLightBeam, std::shared_ptr<IconString> iconString);
+	void appendTextToIconString(std::vector<Icon*> icons, const std::string text, Vec2 P, Scene* pSceneParent, int localZOrder);
 
 	// a selector callback
 	void menuCloseCallback(Ref* pSender);

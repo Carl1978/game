@@ -131,6 +131,8 @@ GameScene::GameScene() {
 
 	m_seq = 0.0f;
 	m_cyc = 0;
+	m_bShout = false;
+	m_stateUpdate = 0;
 
 	for (int j = 0; j < 3; j++) {
 		wavePos[j] = Vec2(0.0f, 0.0f);
@@ -144,6 +146,23 @@ GameScene::GameScene() {
 
 GameScene::~GameScene() {
 	cocos2d::log("dtr...");
+
+	// icon letters have to always be handled (NOTE: not an autorelease object)
+	if (m_iconLetters.size() > 0) {
+		for (auto icon : m_iconLetters) {
+			if (icon) {
+				delete icon;
+				icon = nullptr;
+			}
+		}
+		m_iconLetters.clear();
+	}
+
+	if (repeatSeqJelly) repeatSeqJelly->release();
+	if (seqJelly) seqJelly->release();
+	if (rotateToLeft) rotateToLeft->release();
+	if (rotateToRight) rotateToRight->release();
+
 	/*if (pEntityManager) {
 		pEntityManager->deinit();
 		delete pEntityManager;
@@ -348,6 +367,7 @@ bool GameScene::init()
 
 	m_iconLetters.at(0)->pSprite->setOpacity(128);
 
+	// TODO: in update function it's crashing for some reason?! BUG!!!
 	Icon* pIcon = nullptr;
 	const rapidjson::Value& a = m_documentLetters["sprites"];
 	for (rapidjson::Value::ConstMemberIterator iter = a.MemberBegin(); iter != a.MemberEnd(); ++iter) {
@@ -385,6 +405,52 @@ bool GameScene::init()
 	//cocos2d::log("m_pIconB->pSprite->getContentSize().width : %f", m_pIconB->pSprite->getContentSize().width);
 	//cocos2d::log("m_pIconB->pSprite->getContentSize().height : %f", m_pIconB->pSprite->getContentSize().height);
 
+	// Boat
+	m_pSpriteBoat = Sprite::create("boat96x96.png");
+	m_pSpriteBoat->setPosition(Vec2(visibleSize.width*0.2f, visibleSize.height*0.5f + 256 * 0.5f - 96 * 0.5f));
+	this->addChild(m_pSpriteBoat, 10 - 4);
+
+	// Man
+	/*m_pSpriteMan = Sprite::create("man64x64.png");
+	m_pSpriteMan->setPosition(Vec2(visibleSize.width*0.5f, visibleSize.height*0.5f));
+	this->addChild(m_pSpriteMan, 150);*/
+
+	// draw light beam!
+	Point vertices[4] = { Vec2(0, 0), Vec2(-15, 220), Vec2(15, 220), Vec2(0, 0) };
+	m_pPolygon = DrawNode::create();
+	//creating yellow polygon with invisible black border
+	m_pPolygon->drawPolygon(vertices, 4, Color4F(1, 1, 0, 0.4f), 1, Color4F(0, 0, 0, 0)); // was 0.6f
+	m_pPolygon->setPosition(m_pSpriteBoat->getPosition());
+	m_pPolygon->setRotation(180.0f);
+	this->addChild(m_pPolygon, 200);
+
+	// draw light beam vert!
+	//Point vert[4] = { Vec2(-1, 0), Vec2(-1, 220), Vec2(1, 220), Vec2(1, 0) };
+	//m_pPolygonLine = DrawNode::create();
+	////creating yellow polygon with invisible black border
+	//m_pPolygonLine->drawPolygon(vert, 4, Color4F(0, 0, 0, 0.6f), 1, Color4F(0, 0, 0, 0)); // was 0.6f
+	//m_pPolygonLine->setPosition(m_pSpriteBoat->getPosition());
+	//m_pPolygonLine->setRotation(180.0f);
+	//this->addChild(m_pPolygonLine, 201);
+
+	m_pPolygonLine = DrawNode::create();
+	Vec2 centerPos = Vec2::ZERO;// m_pSpriteBoat->getPosition();//Vec2(visibleSize.width*0.5f, visibleSize.height*0.5f);
+	constexpr int numPoints = 25;
+	Vec2 pointArr[numPoints];
+	for (int n = 0; n < numPoints; n++) {
+		pointArr[n] = Vec2(centerPos.x, centerPos.y - 10.0f*n);
+	}
+	m_pPolygonLine->drawPoints(pointArr, numPoints, 2.0f, Color4F(0.0f, 0.0f, 0.0f, 0.9f));
+	m_pPolygonLine->setPosition(m_pSpriteBoat->getPosition());
+	this->addChild(m_pPolygonLine, 199);
+	//m_pPolygon->addChild(m_pPolygonLine);
+
+	auto spriteAnchor = Sprite::create("anchor128x128.png");
+	spriteAnchor->setOpacity(128);
+	spriteAnchor->setScale(0.25f);
+	spriteAnchor->setPosition(Vec2(0.0f, -10.0f * 25));
+	m_pPolygonLine->addChild(spriteAnchor);
+
 	/////////////////////////////////////////////////////////
 
 	m_iconStringBelt1 = IconString::create();
@@ -402,9 +468,14 @@ bool GameScene::init()
 	for (rapidjson::Value::ConstMemberIterator iter = doc.MemberBegin(); iter != doc.MemberEnd(); ++iter) {
 		std::string name = iter->name.GetString();
 		std::string text = iter->value.GetString();
-		//cocos2d::log("** name : text => %s : %s", name.c_str(), text.c_str());
+		cocos2d::log("** name : text => %s : %s", name.c_str(), text.c_str());
+		m_phrases.push_back(text);
 		msg += text;
 		msg += " ";
+	}
+
+	for (std::string s : m_phrases) {
+		cocos2d::log("m_phrases : %s", s.c_str());
 	}
 
 	m_iconStringBelt1->spawn(m_iconLetters, msg, Vec2(0.0f, 140.0f), this, 200);
@@ -419,8 +490,8 @@ bool GameScene::init()
 	m_iconStringQuestion = IconString::create();
 	m_iconStringQuestion->setScale(0.4f);
 
-	std::string question = "Thank you very much = {close}";
-	m_iconStringQuestion->spawn(m_iconLetters, question, Vec2(48.0f, visibleSize.height - 48.0f), this, 200);
+	std::string question = "Thank you very much";// = ";//{close}";
+	m_iconStringQuestion->spawn(m_iconLetters, question, Vec2(m_pPolygonLine->getPosition().x - 32.0f, visibleSize.height - 48.0f), this, 200);
 
 	for (auto pIcon : m_iconStringQuestion->iconArr) {
 		if (pIcon) {
@@ -428,6 +499,18 @@ bool GameScene::init()
 			addChild(pIcon->pSprite, 200);
 		}
 	}
+
+	// builds up the answer string
+	m_iconStringAnswer = IconString::create();
+	m_iconStringAnswer->setScale(0.4f);
+	//appendTextToIconString(m_iconLetters, "Koszi szepen!", Vec2(m_pPolygonLine->getPosition().x - 32.0f, visibleSize.height * 0.5f), this, 200);
+	//appendTextToIconString(m_iconLetters, "Hello there", Vec2(m_pPolygonLine->getPosition().x - 32.0f, visibleSize.height * 0.5f), this, 200);
+	// TODO: need to update above function to pass the iconstring var through
+	// TODO: where we added the retain code to fix bug. We should also check the release on restart (maybe that's the memory leak / dangling pointers problem)
+
+	/*appendTextToIconString(m_iconLetters, "hi", Vec2(m_pPolygonLine->getPosition().x - 32.0f, visibleSize.height * 0.5f), this, 200);
+	Texture2D* pText2 = m_iconLetters.at(0)->pSprite->getTexture();
+	if (pText2) cocos2d::log("pText2 is valid!");*/
 
 	// get string from our json obj loaded in
 	//std::string stringComputer = m_document["computer"].GetString();
@@ -613,27 +696,6 @@ bool GameScene::init()
 			//waveSpr[i]->runAction(RepeatForever::create(animate->clone()));
 		}
 	}
-
-	// Boat
-	m_pSpriteBoat = Sprite::create("boat96x96.png");
-	m_pSpriteBoat->setPosition(Vec2(visibleSize.width*0.2f, visibleSize.height*0.5f + 256 * 0.5f - 96 * 0.5f));
-	this->addChild(m_pSpriteBoat, 10 - 4);
-
-	// Man
-	/*m_pSpriteMan = Sprite::create("man64x64.png");
-	m_pSpriteMan->setPosition(Vec2(visibleSize.width*0.5f, visibleSize.height*0.5f));
-	this->addChild(m_pSpriteMan, 150);*/
-
-	// draw light beam!
-	Point vertices[4] = { Vec2(0, 0), Vec2(-20, 220), Vec2(20, 220), Vec2(0, 0) };
-	//DrawNode* polygon = DrawNode::create();
-	m_pPolygon = DrawNode::create();
-	//creating yellow polygon with invisible black border
-	m_pPolygon->drawPolygon(vertices, 4, Color4F(1, 1, 0, 0.6f), 1, Color4F(0, 0, 0, 0));
-	//polygon->setPosition(Vec2(visibleSize.width*0.5f, visibleSize.height*0.5f));
-	m_pPolygon->setPosition(m_pSpriteBoat->getPosition());
-	m_pPolygon->setRotation(180.0f);
-	this->addChild(m_pPolygon, 200);
 
 	// Next TODO:
 	// Create separate wave in GIMP and makee them move at the different speeds!
@@ -851,11 +913,6 @@ void GameScene::update(float dt)
 	float dr = cos((m_seq + 20.0f)*0.1f) * 8.0f;
 	m_pSpriteBoat->setRotation(dr);
 
-	// upddate light beam's position based on boat's position.
-	m_pPolygon->setPosition(m_pSpriteBoat->getPosition());
-	m_pPolygon->setRotation(180.0f + m_pSpriteBoat->getRotation() * 0.5f);
-	// TODO: need to re-update the polygon's vertices to make more realistic!
-
 	// Now destroy our icon string
 	//if (m_cyc == 5 * 60) {
 	//	cocos2d::log("m_iconStringBonjour.use_count() : %d", m_iconStringBonjour.use_count());
@@ -864,6 +921,47 @@ void GameScene::update(float dt)
 	//}
 
 	processPositionIconStringToWave(m_iconStringBelt1, 0);
+
+	if (!m_bShout) {
+		// upddate light beam's position based on boat's position.
+		m_pPolygon->setPosition(m_pSpriteBoat->getPosition());
+		float damp = 0.25f;//0.5f;
+
+		m_pPolygon->setRotation(180.0f + m_pSpriteBoat->getRotation() * damp);
+		// TODO: need to re-update the polygon's vertices to make more realistic!
+		m_pPolygonLine->setPosition(m_pSpriteBoat->getPosition());
+		//m_pPolygonLine->setRotation(180.0f + m_pSpriteBoat->getRotation() * 0.1f);
+	}
+	else {
+		int idWord = getLightBeamIconStringWord(m_pPolygonLine, m_iconStringBelt1);
+		if (idWord != -1) {
+			std::string word = m_iconStringBelt1->m_words.at(idWord);
+			cocos2d::log("word : %s", word.c_str());
+			if (m_stateUpdate == 1) {
+				m_stateUpdate = 2;
+				std::string answer = "hi";// Koszi szepen!";
+				int prevSize = m_iconStringAnswer->iconArr.size();
+				cocos2d::log("prevSize : %d", prevSize);
+				//m_iconStringAnswer->spawn(m_iconLetters, answer, Vec2(32.0f, visibleSize.height * 0.5f), this, 200);
+				appendTextToIconString(m_iconLetters, word, Vec2(m_pPolygonLine->getPosition().x - 32.0f, visibleSize.height * 0.5f), this, 200);
+
+				//Icon* pIcon = nullptr;
+				//for (int i = prevSize; i < m_iconStringAnswer->iconArr.size(); i++) {
+				//	pIcon = m_iconStringAnswer->iconArr.at(i);
+				//	if (pIcon) {
+				//		pIcon->pSprite->setColor(Color3B::YELLOW);
+				//		addChild(pIcon->pSprite, 200);
+				//	}
+				//}
+			}
+		}
+		processLightBeamIconStringWord(m_pPolygonLine, m_iconStringBelt1);
+	}
+
+	Vec2 P = m_pPolygonLine->getPosition();
+	P.y = P.y - 10.0f*25.0f;// m_pPolygonLine->getContentSize().height;
+	processPositionIconStringToPos(m_iconStringQuestion, P);
+	processPositionIconStringToPos(m_iconStringAnswer, P, Vec2(0.0f, 24.0f));
 
 	m_seq++;
 	m_cyc++;
@@ -912,30 +1010,47 @@ bool GameScene::onTouchBegan(cocos2d::Touch* touch, cocos2d::Event* event)
 	location.y = visibleSize.height - location.y; // invert direction
 	cocos2d::log("GameScene::onTouchBegan : You touched %f, %f", location.x, location.y);
 
-	if (m_pSpritePlayer) {
-		m_pSpritePlayer->stopAction(repeatSeqJelly);
-		m_pSpritePlayer->stopAction(rotateToLeft);
-		m_pSpritePlayer->stopAction(rotateToRight);
-		rotateToShoot = RotateTo::create(0.3f, 0.0f);
-		m_pSpritePlayer->runAction(rotateToShoot);
+	m_bShout = true;
+	m_stateUpdate = 1;
 
-		// glowing
-		tint = TintTo::create(0.2f, Color3B(192, 128, 128));
-		m_pSpritePlayer->runAction(tint);
-	}
-	if (m_pSpriteLazer) {
-		Letter::T.y = 0.0f; // indicates we are firing laser! >= 0
+	//appendTextToIconString(m_iconLetters, "hi", Vec2(m_pPolygonLine->getPosition().x - 32.0f, visibleSize.height * 0.5f), this, 200);
+	////m_iconLetters.at(0)->pSprite->getTexture();
+	//Texture2D* pText1 = m_pSpriteBoat->getTexture();
+	//if (pText1) cocos2d::log("pText1 is valid!");
 
-		// glowing lazer beam fx
-		auto fadeTo = FadeTo::create(0.1f, 128.0f);
-		auto fadeTo2 = FadeTo::create(0.1f, 64.0f);
-		auto seqGlow = Sequence::create(fadeTo, fadeTo2, nullptr);
-		m_pSpriteLazer->runAction(RepeatForever::create(seqGlow));
+	//if (m_iconLetters.at(0)->pSprite) {
+	//	cocos2d::log("pSprite is valid!");
+	//	//Texture2D* pText2 = m_iconLetters.at(0)->pSprite->getTexture(); // CRASH!!
+	//	//if (pText2) cocos2d::log("pText2 is valid!");
+	//}
 
-		// growing lazer beam fx
-		auto scaleTo2 = ScaleTo::create(0.1f, 8.0f * 1.0f / 8.0f, visibleSize.height * 1.0f / 8.0f);
-		m_pSpriteLazer->runAction(scaleTo2);
-	}
+	//m_iconStringQuestion->iconArr.at(0)->pSprite->getTexture();
+	//m_iconLetters.at(0)->pSprite->getTexture();
+
+	//if (m_pSpritePlayer) {
+	//	m_pSpritePlayer->stopAction(repeatSeqJelly);
+	//	m_pSpritePlayer->stopAction(rotateToLeft);
+	//	m_pSpritePlayer->stopAction(rotateToRight);
+	//	rotateToShoot = RotateTo::create(0.3f, 0.0f);
+	//	m_pSpritePlayer->runAction(rotateToShoot);
+
+	//	// glowing
+	//	tint = TintTo::create(0.2f, Color3B(192, 128, 128));
+	//	m_pSpritePlayer->runAction(tint);
+	//}
+	//if (m_pSpriteLazer) {
+	//	Letter::T.y = 0.0f; // indicates we are firing laser! >= 0
+
+	//	// glowing lazer beam fx
+	//	auto fadeTo = FadeTo::create(0.1f, 128.0f);
+	//	auto fadeTo2 = FadeTo::create(0.1f, 64.0f);
+	//	auto seqGlow = Sequence::create(fadeTo, fadeTo2, nullptr);
+	//	m_pSpriteLazer->runAction(RepeatForever::create(seqGlow));
+
+	//	// growing lazer beam fx
+	//	auto scaleTo2 = ScaleTo::create(0.1f, 8.0f * 1.0f / 8.0f, visibleSize.height * 1.0f / 8.0f);
+	//	m_pSpriteLazer->runAction(scaleTo2);
+	//}
 
 	return true;
 }
@@ -951,30 +1066,40 @@ void GameScene::onTouchEnded(cocos2d::Touch* touch, cocos2d::Event* event)
 	location.y = visibleSize.height - location.y; // invert direction
 	cocos2d::log("GameScene::onTouchEnded : You touched %f, %f", location.x, location.y);
 
-	if (m_pSpritePlayer) {
-		Letter::T.y = -1.0f; // indicates we are NOT firing laser! < 0
-		m_pSpritePlayer->stopAction(rotateToShoot);
-		rotateToLeft = RotateTo::create(0.07f, 6.0f);
-		rotateToRight = RotateTo::create(0.07f, -6.0f);
-		seqJelly = Sequence::create(rotateToLeft, rotateToRight, nullptr);
-		repeatSeqJelly = RepeatForever::create(seqJelly);
-		m_pSpritePlayer->runAction(repeatSeqJelly);
+	m_bShout = false;
+	m_stateUpdate = 0;
 
-		// glowing
-		m_pSpritePlayer->stopAction(tint);
-		m_pSpritePlayer->setColor(Color3B(255, 255, 255));
-	}
+	// draw light beam!
+	Point vertices[4] = { Vec2(0, 0), Vec2(-15, 220), Vec2(15, 220), Vec2(0, 0) };
+	m_pPolygon->clear();
+	m_pPolygon->drawPolygon(vertices, 4, Color4F(1, 1, 0, 0.4f), 1, Color4F(0, 0, 0, 0)); // was 0.6f
+	m_pPolygon->setPosition(m_pSpriteBoat->getPosition());
+	m_pPolygon->setRotation(180.0f);
 
-	if (m_pSpriteLazer) {
-		bShake = false;
-		m_pSpriteLazer->stopAllActions();
-		m_pSpriteLazer->setScaleX(1.0f * 1.0f / 8.0f);
-		m_pSpriteLazer->setScaleY(0.0f * 1.0f / 8.0f);
+	//if (m_pSpritePlayer) {
+	//	Letter::T.y = -1.0f; // indicates we are NOT firing laser! < 0
+	//	m_pSpritePlayer->stopAction(rotateToShoot);
+	//	rotateToLeft = RotateTo::create(0.07f, 6.0f);
+	//	rotateToRight = RotateTo::create(0.07f, -6.0f);
+	//	seqJelly = Sequence::create(rotateToLeft, rotateToRight, nullptr);
+	//	repeatSeqJelly = RepeatForever::create(seqJelly);
+	//	m_pSpritePlayer->runAction(repeatSeqJelly);
 
-		// glowing lazer beam fx
-		m_pSpriteLazer->stopAllActions();
-		m_pSpriteLazer->setOpacity(0.0f);
-	}
+	//	// glowing
+	//	m_pSpritePlayer->stopAction(tint);
+	//	m_pSpritePlayer->setColor(Color3B(255, 255, 255));
+	//}
+
+	//if (m_pSpriteLazer) {
+	//	bShake = false;
+	//	m_pSpriteLazer->stopAllActions();
+	//	m_pSpriteLazer->setScaleX(1.0f * 1.0f / 8.0f);
+	//	m_pSpriteLazer->setScaleY(0.0f * 1.0f / 8.0f);
+
+	//	// glowing lazer beam fx
+	//	m_pSpriteLazer->stopAllActions();
+	//	m_pSpriteLazer->setOpacity(0.0f);
+	//}
 }
 
 Sprite* GameScene::createSpriteFromLabel(Label* pLabel) {
@@ -1010,6 +1135,20 @@ Sprite* GameScene::createSpriteFromLabel(Label* pLabel) {
 	pSpriteContainer->removeChild(pLabel, false);
 
 	pSprite = Sprite::createWithTexture(pRenderTexture->getSprite()->getTexture());
+	pSprite->retain();
+	pRenderTexture->retain();
+	pRenderTexture->getSprite()->retain();
+	pRenderTexture->getSprite()->getTexture()->retain();
+	//usa
+	//pSprite = Sprite::create();
+	//pSprite->setTexture("button-close64x64.png");
+	//pSprite = Sprite::create("button-close64x64.png");
+	//pSprite->getTexture()->retain();//usa
+	//pSprite->initWithTexture(pRenderTexture->getSprite()->getTexture());
+	//pSprite->createWithSpriteFrame(pRenderTexture->getSprite()->getSpriteFrame());
+
+	pRenderTexture->release();
+
 	pSprite->setContentSize(letterSize);
 
 	return pSprite;
@@ -1050,6 +1189,8 @@ std::vector<Sprite*> GameScene::createSpriteArrFromLabel(Label* pLabel, const st
 	pSpriteContainer->removeChild(pLabel, false);
 
 	pSprite = Sprite::createWithTexture(pRenderTexture->getSprite()->getTexture());
+
+	pRenderTexture->release();
 
 	spriteArr.push_back(pSprite);
 
@@ -1121,7 +1262,8 @@ std::vector<Icon*> GameScene::createIconArrFromString(const std::string& text) {
 	Icon* pIcon = nullptr;
 	Label* pLabel = nullptr;
 	// Create a label with given font
-	TTFConfig config("fonts/Good Unicorn - TTF.ttf", 64.0f);
+	//TTFConfig config("fonts/Good Unicorn - TTF.ttf", 64.0f);
+	TTFConfig config("fonts/PressStart2P.ttf", 24.0f);
 	std::vector<std::string> sArr;
 	size_t size = text.size();
 	if (size <= 0) { return iconArr; }
@@ -1240,10 +1382,9 @@ int GameScene::getIdxFromIconValue(std::vector<Icon*> iconLetters, const std::st
 
 // TODO: wave should be an object i.e. Wave* pWave
 void GameScene::processPositionIconStringToWave(std::shared_ptr<IconString> iconString, int waveIdx) {
-	auto visibleSize = Director::getInstance()->getVisibleSize();
-	Vec2 origin = Director::getInstance()->getVisibleOrigin();
-	Vec2 P;
+	if (iconString == nullptr || iconString->iconArr.size() <= 0) return;
 
+	Vec2 P;
 	for (Icon* pIcon : iconString->iconArr) {
 		P = pIcon->pos;
 
@@ -1273,6 +1414,133 @@ void GameScene::processPositionIconStringToWave(std::shared_ptr<IconString> icon
 	//	}
 	//	wavePos[j].y = cos((m_seq + j*20.0f)*0.05f) * 4.0f;
 	//}
+}
+
+void GameScene::processPositionIconStringToPos(std::shared_ptr<IconString> iconString, Vec2 pos, Vec2 offset) {
+	if (iconString == nullptr || iconString->iconArr.size() <= 0) return;
+
+	Vec2 P;
+	for (Icon* pIcon : iconString->iconArr) {
+		P = pIcon->pos;
+		P.y = pos.y;
+		pIcon->pos = P;
+		pIcon->pSprite->setPosition(P + offset);
+	}
+}
+
+void GameScene::processLightBeamIconStringWord(DrawNode* m_pLightBeam, std::shared_ptr<IconString> iconString) {
+	// find word
+	Vec2 T = m_pPolygonLine->getPosition();
+	Vec2 P;
+	float d = 0.0f;
+	Icon* pIcon = nullptr;
+	Icon* pIconFound = nullptr;
+	Icon* pIconFirst = nullptr;
+	Icon* pIconLast = nullptr;
+	int idxFound = -1;
+
+	// finds the first icon (letter) and then  anything on the RHS
+	for (int i = 0; i < m_iconStringBelt1->iconArr.size(); i++) {
+		pIcon = m_iconStringBelt1->iconArr.at(i);
+		if (pIconFound != nullptr) {
+			// founc a matching letter for this word
+			if (pIcon->idWord == pIconFound->idWord) {
+				//pIcon->pSprite->setOpacity(128);
+				pIconLast = pIcon;
+			}
+			else {
+				break;
+			}
+		}
+		else {
+			P = pIcon->pos;
+			d = fabs(T.x - P.x);
+			if (d < 16.0f) {
+				//pIcon->pSprite->setOpacity(128);
+				pIconFound = pIcon;
+				idxFound = i;
+				//cocos2d::log("pIconFound->idWord : %d", pIconFound->idWord);
+			}
+		}
+	}
+
+	// now anything on the LHS (may not need this check, but just to make sure, depends on game style)
+	for (int i = idxFound; i >= 0; i--) {
+		pIcon = m_iconStringBelt1->iconArr.at(i);
+		if (pIconFound != nullptr) {
+			// founc a matching letter for this word
+			if (pIcon->idWord == pIconFound->idWord) {
+				//pIcon->pSprite->setOpacity(128);
+				pIconFirst = pIcon;
+			}
+			else {
+				break;
+			}
+		}
+	}
+
+	// calculate and update the light beam onto this word
+	if (pIconFirst != nullptr && pIconLast != nullptr) {
+		// draw light beam on full!
+		float paddingBottom = 12.0f;
+		float paddingLeftRight = 12.0f;
+		Vec2 leftPos = pIconFirst->pSprite->getPosition();
+		Vec2 rightPos = pIconLast->pSprite->getPosition();
+		leftPos.x = T.x - leftPos.x + paddingLeftRight;
+		rightPos.x = T.x - rightPos.x - paddingLeftRight;
+		leftPos.y = m_pSpriteBoat->getPosition().y - leftPos.y + paddingBottom;
+		rightPos.y = m_pSpriteBoat->getPosition().y - rightPos.y + paddingBottom;
+		Point vertices[4] = { Vec2(0, 0), Vec2(rightPos.x, leftPos.y), Vec2(leftPos.x, rightPos.y), Vec2(0, 0) };
+		m_pPolygon->clear();
+		m_pPolygon->drawPolygon(vertices, 4, Color4F(1, 1, 0, 0.6f), 1, Color4F(0, 0, 0, 0));
+		m_pPolygon->setPosition(m_pSpriteBoat->getPosition());
+		m_pPolygon->setRotation(180.0f);
+	}
+	else {
+		// draw light beam!
+		//Point vertices[4] = { Vec2(0, 0), Vec2(-15, 220), Vec2(15, 220), Vec2(0, 0) };
+		//m_pPolygon->clear();
+		//m_pPolygon->drawPolygon(vertices, 4, Color4F(1, 1, 0, 0.5f), 1, Color4F(0, 0, 0, 0)); // was 0.6f
+		//m_pPolygon->setPosition(m_pSpriteBoat->getPosition());
+		//m_pPolygon->setRotation(180.0f);
+	}
+}
+
+int GameScene::getLightBeamIconStringWord(DrawNode* m_pLightBeam, std::shared_ptr<IconString> iconString) {
+	// find word
+	Vec2 T = m_pPolygonLine->getPosition();
+	Vec2 P;
+	float d = 0.0f;
+	Icon* pIcon = nullptr;
+	int idWord = -1;
+
+	// finds the first icon (letter) and then returns the idWord of that icon
+	for (int i = 0; i < m_iconStringBelt1->iconArr.size(); i++) {
+		pIcon = m_iconStringBelt1->iconArr.at(i);
+		P = pIcon->pos;
+		d = fabs(T.x - P.x);
+		if (d < 16.0f) {
+			idWord = pIcon->idWord;
+			cocos2d::log("getLightBeamIconStringWord : idWord : %d", idWord);
+			break;
+		}
+	}
+
+	return idWord;
+}
+
+void GameScene::appendTextToIconString(std::vector<Icon*> icons, const std::string text, Vec2 P, Scene* pSceneParent, int localZOrder) {
+	float endPos = m_iconStringAnswer->getwidth() ? m_iconStringAnswer->getwidth() + 24.0f : 0.0f;
+	int size = m_iconStringAnswer->iconArr.size();
+	m_iconStringAnswer->spawn(m_iconLetters, text, Vec2(P.x + endPos, P.y), this, 200);
+	Icon *pI = nullptr;
+	for (int n = size; n < m_iconStringAnswer->iconArr.size(); n++) {
+		pI = m_iconStringAnswer->iconArr[n];
+		if (pI) {
+			pI->pSprite->setColor(Color3B::YELLOW);
+			addChild(pI->pSprite, 200);
+		}
+	}
 }
 
 // ----------------------------------------------- //

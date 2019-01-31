@@ -19,9 +19,12 @@ class IconString {
 	float scale;
 public:
 	Scene* pSceneParent;
+	static int idIcon;
+	static int idWord;
 	std::vector<Icon*> iconArr;
 	Size sizeIconDefault;
 	float width;
+	std::vector<std::string> m_words;
 
 	IconString();
 	~IconString();
@@ -40,6 +43,7 @@ public:
 	void deinit(void);
 	void process(void);
 	void draw(void);
+	std::vector<std::string> split(const std::string& s, char delimiter);
 };
 
 #endif /* defined(__game__IconString__) */
