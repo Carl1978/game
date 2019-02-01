@@ -30,6 +30,7 @@ IconString::~IconString()
 			if (icon) {
 				if (pSceneParent != nullptr) {
 					if (icon->pSprite) {
+						cocos2d::log("GOT HERE!");
 						//pSceneParent->removeChild(icon->pSprite); // crashes here, I think we don't need to handle removing
 						// TODO: something is not getting freed properly!!!!!! Test by restarting each time! May have to turnn off code blocks to locate memory  leak??!!
 						//delete icon->pSprite;
@@ -43,6 +44,7 @@ IconString::~IconString()
 			}
 		}
 		iconArr.clear();
+		m_words.clear();
 	}
 }
 
@@ -95,9 +97,19 @@ std::vector<Icon*> IconString::spawn(std::vector<Icon*> icons, const std::string
 	if (size <= 0) { return iconArr; }
 
 	// Create words list (NOTE: idx is the id)
-	m_words = split(text, ' ');
-	for (auto s : m_words) {
-		cocos2d::log("s : words : %s", s.c_str());
+	if (m_words.size() <= 0) {
+		m_words = split(text, ' ');
+		for (auto s : m_words) {
+			cocos2d::log("s : words : %s", s.c_str());
+		}
+	}
+	else {
+		std::vector<std::string> words;
+		words = split(text, ' ');
+		for (auto s : words) {
+			cocos2d::log("s : words : append : %s", s.c_str());
+			m_words.push_back(s);
+		}
 	}
 
 	Icon* pIcon = nullptr;
@@ -155,6 +167,12 @@ std::vector<Icon*> IconString::spawn(std::vector<Icon*> icons, const std::string
 			// create sprite from an element in icons array
 			int idxLetter = getIdxFromIconValue(icons, sArr[i]);
 			pSprite = Sprite::createWithTexture(icons.at(idxLetter)->pSprite->getTexture());
+
+			// NOTE: Crash caused by idx == -1 !!!!!!!!!!!!!!!!!!!!!!!!
+			//pSprite->retain(); // NOTE: TODO: need these lines to stop it crashing! But also need to release them in dtr I think.
+			//icons.at(idxLetter)->pSprite->retain();
+			//icons.at(idxLetter)->pSprite->getTexture()->retain();
+
 			//pSprite = Sprite::createWithTexture(icons.at(0)->pSprite->getTexture()); // DEBUG
 			//pSprite = Sprite::create("boat96x96.png"); // DEBUG
 			pSprite->setScale(this->scale);

@@ -118,6 +118,9 @@ GameScene::GameScene() {
 	Entity::currentID = 0;
 	Floor::total = 0;
 	Letter::T = Vec2(0, 0);
+	idWordCurrent = -1;
+	m_phraseKey = "";
+	m_phraseVal = "";
 
 	// produce true random numbers?!
 	//time_t theTime;
@@ -148,15 +151,25 @@ GameScene::~GameScene() {
 	cocos2d::log("dtr...");
 
 	// icon letters have to always be handled (NOTE: not an autorelease object)
-	if (m_iconLetters.size() > 0) {
-		for (auto icon : m_iconLetters) {
-			if (icon) {
-				delete icon;
-				icon = nullptr;
-			}
-		}
-		m_iconLetters.clear();
-	}
+	//if (m_iconLetters.size() > 0) {
+	//	for (auto icon : m_iconLetters) {
+	//		if (icon) {
+	//			if (icon->pSprite) {
+	//				icon->pSprite->release();
+	//			}
+	//			//	delete icon;
+	//			//	icon = nullptr;
+	//		}
+	//	}
+	//	//m_iconLetters.clear();
+	//}
+
+	//iconsRelease(m_iconLetters);
+	//iconsRelease(m_iconStringQuestion->iconArr);
+	//iconsRelease(m_iconStringAnswer->iconArr);
+	//iconsRelease(m_iconStringBelt1->iconArr);
+	//iconsRelease(m_iconStringBelt2->iconArr);
+	//iconsRelease(m_iconStringBelt3->iconArr);
 
 	if (repeatSeqJelly) repeatSeqJelly->release();
 	if (seqJelly) seqJelly->release();
@@ -345,13 +358,24 @@ bool GameScene::init()
 	//////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////
 
-	// TESTS
+	// Create star icon for score
+	m_pSpriteStar = Sprite::create("star64x64.png");
+	m_pSpriteStar->setPosition(Vec2(0.0f + 32.0f, visibleSize.height - 32.0f));
+	m_pSpriteStar->setScale(0.5f);
+	this->addChild(m_pSpriteStar, 300);
 
-	//// Create a label with given font
-	//TTFConfig config("fonts/Good Unicorn - TTF.ttf", 64.0f);
-	//Label* pLabel = Label::createWithTTF(config, m_document["magyar"].GetString(), cocos2d::TextHAlignment::CENTER);
-	//pLabel->setTextColor(Color4B::WHITE);
-	//pLabel->enableOutline(Color4B::BLACK, 4);
+	// Create label for score
+	TTFConfig config("fonts/PressStart2P.ttf", 14.0f);
+	char buffer[128];
+	score = 0;
+	sprintf(buffer, "x %d", score);
+	std::string sScore = std::string(buffer);
+	pLabelScore = Label::createWithTTF(config, sScore, cocos2d::TextHAlignment::LEFT);
+	pLabelScore->setTextColor(Color4B::WHITE);
+	pLabelScore->enableOutline(Color4B::BLACK, 4);
+	pLabelScore->setPosition(Vec2(40.0f + m_pSpriteStar->getContentSize().width * m_pSpriteStar->getScaleX() * 1.5f,
+		visibleSize.height - 32.0f));
+	this->addChild(pLabelScore, 300);
 
 	//// create sprite from this label
 	//Sprite* pNewSprite = createSpriteFromLabel(pLabel);
@@ -367,7 +391,6 @@ bool GameScene::init()
 
 	m_iconLetters.at(0)->pSprite->setOpacity(128);
 
-	// TODO: in update function it's crashing for some reason?! BUG!!!
 	Icon* pIcon = nullptr;
 	const rapidjson::Value& a = m_documentLetters["sprites"];
 	for (rapidjson::Value::ConstMemberIterator iter = a.MemberBegin(); iter != a.MemberEnd(); ++iter) {
@@ -422,7 +445,7 @@ bool GameScene::init()
 	m_pPolygon->drawPolygon(vertices, 4, Color4F(1, 1, 0, 0.4f), 1, Color4F(0, 0, 0, 0)); // was 0.6f
 	m_pPolygon->setPosition(m_pSpriteBoat->getPosition());
 	m_pPolygon->setRotation(180.0f);
-	this->addChild(m_pPolygon, 200);
+	this->addChild(m_pPolygon, 400);
 
 	// draw light beam vert!
 	//Point vert[4] = { Vec2(-1, 0), Vec2(-1, 220), Vec2(1, 220), Vec2(1, 0) };
@@ -474,6 +497,9 @@ bool GameScene::init()
 		msg += " ";
 	}
 
+	std::string matchPhrase = m_document["thank you very much!"].GetString();
+	cocos2d::log("matchPhrase : %s", matchPhrase.c_str());
+
 	for (std::string s : m_phrases) {
 		cocos2d::log("m_phrases : %s", s.c_str());
 	}
@@ -490,7 +516,7 @@ bool GameScene::init()
 	m_iconStringQuestion = IconString::create();
 	m_iconStringQuestion->setScale(0.4f);
 
-	std::string question = "Thank you very much";// = ";//{close}";
+	std::string question = getRandomStringFromDocument(m_document);
 	m_iconStringQuestion->spawn(m_iconLetters, question, Vec2(m_pPolygonLine->getPosition().x - 32.0f, visibleSize.height - 48.0f), this, 200);
 
 	for (auto pIcon : m_iconStringQuestion->iconArr) {
@@ -503,12 +529,12 @@ bool GameScene::init()
 	// builds up the answer string
 	m_iconStringAnswer = IconString::create();
 	m_iconStringAnswer->setScale(0.4f);
-	//appendTextToIconString(m_iconLetters, "Koszi szepen!", Vec2(m_pPolygonLine->getPosition().x - 32.0f, visibleSize.height * 0.5f), this, 200);
-	//appendTextToIconString(m_iconLetters, "Hello there", Vec2(m_pPolygonLine->getPosition().x - 32.0f, visibleSize.height * 0.5f), this, 200);
+	//appendTextToIconString(m_iconStringAnswer, m_iconLetters, "Koszi szepen!", Vec2(m_pPolygonLine->getPosition().x - 32.0f, visibleSize.height * 0.5f), this, 200);
+	//appendTextToIconString(m_iconStringAnswer, m_iconLetters, "Hello there", Vec2(m_pPolygonLine->getPosition().x - 32.0f, visibleSize.height * 0.5f), this, 200);
 	// TODO: need to update above function to pass the iconstring var through
 	// TODO: where we added the retain code to fix bug. We should also check the release on restart (maybe that's the memory leak / dangling pointers problem)
 
-	/*appendTextToIconString(m_iconLetters, "hi", Vec2(m_pPolygonLine->getPosition().x - 32.0f, visibleSize.height * 0.5f), this, 200);
+	/*appendTextToIconString(m_iconStringAnswer, m_iconLetters, "hi", Vec2(m_pPolygonLine->getPosition().x - 32.0f, visibleSize.height * 0.5f), this, 200);
 	Texture2D* pText2 = m_iconLetters.at(0)->pSprite->getTexture();
 	if (pText2) cocos2d::log("pText2 is valid!");*/
 
@@ -935,26 +961,17 @@ void GameScene::update(float dt)
 	else {
 		int idWord = getLightBeamIconStringWord(m_pPolygonLine, m_iconStringBelt1);
 		if (idWord != -1) {
-			std::string word = m_iconStringBelt1->m_words.at(idWord);
-			cocos2d::log("word : %s", word.c_str());
-			if (m_stateUpdate == 1) {
-				m_stateUpdate = 2;
-				std::string answer = "hi";// Koszi szepen!";
-				int prevSize = m_iconStringAnswer->iconArr.size();
-				cocos2d::log("prevSize : %d", prevSize);
-				//m_iconStringAnswer->spawn(m_iconLetters, answer, Vec2(32.0f, visibleSize.height * 0.5f), this, 200);
-				appendTextToIconString(m_iconLetters, word, Vec2(m_pPolygonLine->getPosition().x - 32.0f, visibleSize.height * 0.5f), this, 200);
-
-				//Icon* pIcon = nullptr;
-				//for (int i = prevSize; i < m_iconStringAnswer->iconArr.size(); i++) {
-				//	pIcon = m_iconStringAnswer->iconArr.at(i);
-				//	if (pIcon) {
-				//		pIcon->pSprite->setColor(Color3B::YELLOW);
-				//		addChild(pIcon->pSprite, 200);
-				//	}
-				//}
+			if (idWord != idWordCurrent) { // found a different word
+				std::string word = m_iconStringBelt1->m_words.at(idWord);
+				if (m_stateUpdate == 1) {
+					//m_stateUpdate = 2;
+					idWordCurrent = idWord;
+					int prevSize = m_iconStringAnswer->iconArr.size();
+					appendTextToIconString(m_iconStringAnswer, m_iconLetters, word, Vec2(m_pPolygonLine->getPosition().x - 32.0f, visibleSize.height * 0.5f), this, 200);
+				}
 			}
 		}
+
 		processLightBeamIconStringWord(m_pPolygonLine, m_iconStringBelt1);
 	}
 
@@ -1013,7 +1030,7 @@ bool GameScene::onTouchBegan(cocos2d::Touch* touch, cocos2d::Event* event)
 	m_bShout = true;
 	m_stateUpdate = 1;
 
-	//appendTextToIconString(m_iconLetters, "hi", Vec2(m_pPolygonLine->getPosition().x - 32.0f, visibleSize.height * 0.5f), this, 200);
+	//appendTextToIconString(m_iconStringAnswer, m_iconLetters, "hi", Vec2(m_pPolygonLine->getPosition().x - 32.0f, visibleSize.height * 0.5f), this, 200);
 	////m_iconLetters.at(0)->pSprite->getTexture();
 	//Texture2D* pText1 = m_pSpriteBoat->getTexture();
 	//if (pText1) cocos2d::log("pText1 is valid!");
@@ -1068,6 +1085,79 @@ void GameScene::onTouchEnded(cocos2d::Touch* touch, cocos2d::Event* event)
 
 	m_bShout = false;
 	m_stateUpdate = 0;
+
+	// check if we have the correct answer? i.e. matching phrase between the answer icon string
+
+	// create the phrase key
+	cocos2d::log("m_iconStringQuestion->m_words.size() : %d", m_iconStringQuestion->m_words.size());
+	for (int i = 0; i < m_iconStringQuestion->m_words.size(); i++) {
+		cocos2d::log("m_iconStringQuestion->m_words.at(i) : %s", m_iconStringQuestion->m_words.at(i).c_str());
+		if (m_phraseKey != "") {
+			m_phraseKey += " ";
+		}
+		m_phraseKey += m_iconStringQuestion->m_words.at(i);
+	}
+
+	// create the phrase value
+	cocos2d::log("m_iconStringAnswer->m_words.size() : %d", m_iconStringAnswer->m_words.size());
+	for (int i = 0; i < m_iconStringAnswer->m_words.size(); i++) {
+		cocos2d::log("m_iconStringAnswer->m_words.at(i) : %s", m_iconStringAnswer->m_words.at(i).c_str());
+		if (m_phraseVal != "") {
+			m_phraseVal += " ";
+		}
+		m_phraseVal += m_iconStringAnswer->m_words.at(i);
+	}
+
+	cocos2d::log("m_phraseKey : %s", m_phraseKey.c_str());
+	cocos2d::log("m_phraseVal : %s", m_phraseVal.c_str());
+
+	std::string value = m_document[m_phraseKey.c_str()].GetString();
+	cocos2d::log("value : %s", value.c_str());
+
+	if (m_phraseVal == value) {
+		cocos2d::log("Correct Answer!!! :)");
+		updateScore(++score);
+	}
+	else {
+		cocos2d::log("Wrong Answer! :(");
+		if (score > 0) score--;
+		updateScore(score);
+	}
+
+	m_phraseKey = "";
+	m_phraseVal = "";
+
+	// rebuilds up the question string
+	for (auto pIcon : m_iconStringQuestion->iconArr) {
+		if (pIcon) {
+			//delete pIcon; // NOTE: don't need to delete, handle automatically when we pop or clear the vector array
+			//pIcon = nullptr;
+			this->removeChild(pIcon->pSprite);
+		}
+	}
+
+	m_iconStringQuestion->iconArr.clear();
+	m_iconStringQuestion->m_words.clear();
+	std::string question = getRandomStringFromDocument(m_document);
+	m_iconStringQuestion->spawn(m_iconLetters, question, Vec2(m_pPolygonLine->getPosition().x - 32.0f, visibleSize.height - 48.0f), this, 200);
+	for (auto pIcon : m_iconStringQuestion->iconArr) {
+		if (pIcon) {
+			pIcon->pSprite->setColor(Color3B::YELLOW);
+			addChild(pIcon->pSprite, 200);
+		}
+	}
+
+	// rebuilds up the answer string
+	for (auto pIcon : m_iconStringAnswer->iconArr) {
+		if (pIcon) {
+			//delete pIcon; // NOTE: don't need to delete, handle automatically when we pop or clear the vector array
+			//pIcon = nullptr;
+			this->removeChild(pIcon->pSprite);
+		}
+	}
+
+	m_iconStringAnswer->iconArr.clear();
+	m_iconStringAnswer->m_words.clear();
 
 	// draw light beam!
 	Point vertices[4] = { Vec2(0, 0), Vec2(-15, 220), Vec2(15, 220), Vec2(0, 0) };
@@ -1136,9 +1226,9 @@ Sprite* GameScene::createSpriteFromLabel(Label* pLabel) {
 
 	pSprite = Sprite::createWithTexture(pRenderTexture->getSprite()->getTexture());
 	pSprite->retain();
-	pRenderTexture->retain();
-	pRenderTexture->getSprite()->retain();
-	pRenderTexture->getSprite()->getTexture()->retain();
+	//pRenderTexture->retain(); // NOTE: the below comment retains made it slow down alot each time I clicked the restart button in app!!!
+	//pRenderTexture->getSprite()->retain();
+	//pRenderTexture->getSprite()->getTexture()->retain();
 	//usa
 	//pSprite = Sprite::create();
 	//pSprite->setTexture("button-close64x64.png");
@@ -1529,16 +1619,52 @@ int GameScene::getLightBeamIconStringWord(DrawNode* m_pLightBeam, std::shared_pt
 	return idWord;
 }
 
-void GameScene::appendTextToIconString(std::vector<Icon*> icons, const std::string text, Vec2 P, Scene* pSceneParent, int localZOrder) {
-	float endPos = m_iconStringAnswer->getwidth() ? m_iconStringAnswer->getwidth() + 24.0f : 0.0f;
-	int size = m_iconStringAnswer->iconArr.size();
-	m_iconStringAnswer->spawn(m_iconLetters, text, Vec2(P.x + endPos, P.y), this, 200);
+void GameScene::appendTextToIconString(std::shared_ptr<IconString> iconString, std::vector<Icon*> icons, const std::string text, Vec2 P, Scene* pSceneParent, int localZOrder) {
+	float endPos = iconString->getwidth() ? iconString->getwidth() + 24.0f : 0.0f;
+	int size = iconString->iconArr.size();
+	iconString->spawn(m_iconLetters, text, Vec2(P.x + endPos, P.y), this, 200);
 	Icon *pI = nullptr;
-	for (int n = size; n < m_iconStringAnswer->iconArr.size(); n++) {
-		pI = m_iconStringAnswer->iconArr[n];
+	for (int n = size; n < iconString->iconArr.size(); n++) {
+		pI = iconString->iconArr[n];
 		if (pI) {
 			pI->pSprite->setColor(Color3B::YELLOW);
 			addChild(pI->pSprite, 200);
+		}
+	}
+}
+
+std::string GameScene::getRandomStringFromDocument(const rapidjson::Document& doc) {
+	rapidjson::SizeType size = doc.MemberCount();
+	int randIdx = rand() % size;
+	cocos2d::log("getRandomStringFromDocument : randIdx : %d", randIdx);
+	int i = 0;
+	for (rapidjson::Value::ConstMemberIterator iter = doc.MemberBegin(); iter != doc.MemberEnd(); ++iter) {
+		if (i == randIdx) {
+			std::string name = iter->name.GetString();
+			std::string text = iter->value.GetString();
+			cocos2d::log("getRandomStringFromDocument : name : text => %s : %s", name.c_str(), text.c_str());
+			return name;
+		}
+		i++;
+	}
+	return "";
+}
+
+void GameScene::updateScore(int newScore) {
+	char buffer[128];
+	sprintf(buffer, "x %d", newScore);
+	std::string sScore = std::string(buffer);
+	pLabelScore->setString(sScore);
+}
+
+void GameScene::iconsRelease(std::vector<Icon*> icons) {
+	if (icons.size() > 0) {
+		for (auto icon : icons) {
+			if (icon) {
+				if (icon->pSprite) {
+					icon->pSprite->release();
+				}
+			}
 		}
 	}
 }

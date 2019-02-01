@@ -34,6 +34,7 @@ public:
 	Sprite* m_pSpriteLazer;
 	Sprite* m_pSpriteFloor;
 	Sprite* m_pSpriteMarker;
+	Sprite* m_pSpriteStar;
 	Sequence* seqTint;
 	Sequence* seqShake;
 	Sequence* seqGlow;
@@ -76,6 +77,11 @@ public:
 	std::vector<Sprite*> m_spriteLetters;
 	std::vector<Icon*> m_iconLetters;
 	std::vector<std::string> m_phrases;
+	int idWordCurrent;
+	std::string m_phraseKey;
+	std::string m_phraseVal;
+	unsigned int score;
+	Label* pLabelScore;
 
 	virtual bool init();
 	void update(float dt);
@@ -90,7 +96,10 @@ public:
 	void processPositionIconStringToPos(std::shared_ptr<IconString> iconString, Vec2 pos, Vec2 offset = Vec2::ZERO);
 	void processLightBeamIconStringWord(DrawNode* m_pLightBeam, std::shared_ptr<IconString> iconString);
 	int getLightBeamIconStringWord(DrawNode* m_pLightBeam, std::shared_ptr<IconString> iconString);
-	void appendTextToIconString(std::vector<Icon*> icons, const std::string text, Vec2 P, Scene* pSceneParent, int localZOrder);
+	void appendTextToIconString(std::shared_ptr<IconString> iconString, std::vector<Icon*> icons, const std::string text, Vec2 P, Scene* pSceneParent, int localZOrder);
+	std::string getRandomStringFromDocument(const rapidjson::Document& doc);
+	void updateScore(int newScore);
+	void iconsRelease(std::vector<Icon*> icons);
 
 	// a selector callback
 	void menuCloseCallback(Ref* pSender);
