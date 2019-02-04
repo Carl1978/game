@@ -11,7 +11,7 @@ USING_NS_CC;
 CGameManager *CGameManager::_pInstance = NULL;
 
 CGameManager *CGameManager::Instance() {
-	if(!_pInstance) {
+	if (!_pInstance) {
 		_pInstance = new CGameManager;
 		_pInstance->bFirstTime = true; //  for doing first time stuff
 		_pInstance->contentScaleFactor = 1.0; // default (assuming 1024x768)
@@ -25,7 +25,7 @@ CGameManager *CGameManager::Instance() {
 		_pInstance->deviceSize = Size(1024, 768);
 		_pInstance->fontScale = 1.0; // default (assuming 1024x768)
 		_pInstance->m_stringGameType = "Game"; // default
-    }
+	}
 	return _pInstance;
 }
 
@@ -36,7 +36,7 @@ void CGameManager::deinit() {
 	}
 }
 
-CGameManager::CGameManager() {	
+CGameManager::CGameManager() {
 	cocos2d::log("CGameManager::CGameManager()...");
 }
 
@@ -50,27 +50,28 @@ void CGameManager::RunScene(int scene) {
 	// choose scene (creating MVC)
 	switch (scene) {
 		/////////////////////////////////////////////////////////////////////////////////////////////////////
-		case kViewHello:
-			m_pScene = HelloWorld::createScene();
-			Director::getInstance()->setDisplayStats(false);
-			break;
+	case kViewHello:
+		m_pScene = HelloWorld::createScene();
+		Director::getInstance()->setDisplayStats(false);
+		break;
 		/////////////////////////////////////////////////////////////////////////////////////////////////////
-		case kViewGame:
-			m_pScene = GameScene::createScene();
-			Director::getInstance()->setDisplayStats(false);
-			break;
-			/////////////////////////////////////////////////////////////////////////////////////////////////////
-		case kViewSnake:
-			m_pScene = SnakeScene::createScene();
-			Director::getInstance()->setDisplayStats(false);
-			break;
+	case kViewGame:
+		m_pScene = GameScene::createScene();
+		Director::getInstance()->setDisplayStats(true);
+		break;
+		/////////////////////////////////////////////////////////////////////////////////////////////////////
+	case kViewSnake:
+		m_pScene = SnakeScene::createScene();
+		Director::getInstance()->setDisplayStats(false);
+		break;
 		/////////////////////////////////////////////////////////////////////////////////////////////////////
 	}
 
-	if(CCDirector::sharedDirector()->getRunningScene() == NULL) {
+	if (CCDirector::sharedDirector()->getRunningScene() == NULL) {
 		//CCDirector::sharedDirector()->runWithScene(m_pScene);
 		CCDirector::sharedDirector()->runWithScene(TransitionFade::create(fadeSec, m_pScene, Color3B(0, 0, 0)));
-	} else {
+	}
+	else {
 		//CCDirector::sharedDirector()->replaceScene(m_pScene);
 		CCDirector::sharedDirector()->replaceScene(TransitionFade::create(fadeSec, m_pScene, Color3B(0, 0, 0)));
 	}

@@ -44,6 +44,7 @@ public:
 	void process(void);
 	void draw(void);
 	std::vector<std::string> split(const std::string& s, char delimiter);
+	Sprite* createSpriteFromLabel(Label* pLabel);
 };
 
 #endif /* defined(__game__IconString__) */

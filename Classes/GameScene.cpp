@@ -377,10 +377,16 @@ bool GameScene::init()
 		visibleSize.height - 32.0f));
 	this->addChild(pLabelScore, 300);
 
-	//// create sprite from this label
-	//Sprite* pNewSprite = createSpriteFromLabel(pLabel);
+	// create sprite from this label test
+	//TTFConfig configTest("fonts/PressStart2P.ttf", 24.0f);
+	//Label* pLabelTest = Label::createWithTTF(configTest, "Hello!", cocos2d::TextHAlignment::CENTER);
+	//pLabelTest->setTextColor(Color4B::WHITE);
+	//pLabelTest->enableOutline(Color4B::BLACK, 6);
+	//Sprite* pNewSprite = createSpriteFromLabel(pLabelTest);
 	//pNewSprite->setPosition(Vec2(200.0f, 200.0f));
 	//addChild(pNewSprite, 500);
+	//cocos2d::log("pNewSprite->getPosition().x : %f", pNewSprite->getPosition().x);
+	//cocos2d::log("pNewSprite->getContentSize().width : %f", pNewSprite->getContentSize().width);
 
 	// get sprite letters from our json obj loaded in
 	std::string stringLetters = m_documentLetters["alphabet"].GetString();
@@ -388,8 +394,6 @@ bool GameScene::init()
 	stringLetters += m_documentLetters["latin"].GetString();
 	stringLetters += m_documentLetters["punctuation"].GetString();
 	m_iconLetters = createIconArrFromString(stringLetters);
-
-	m_iconLetters.at(0)->pSprite->setOpacity(128);
 
 	Icon* pIcon = nullptr;
 	const rapidjson::Value& a = m_documentLetters["sprites"];
@@ -476,41 +480,25 @@ bool GameScene::init()
 
 	/////////////////////////////////////////////////////////
 
-	m_iconStringBelt1 = IconString::create();
-	m_iconStringBelt1->setScale(0.5f);
+	m_iconStringBelt1 = createBelt(Vec2(300.0f, 140.0f));
+	m_iconStringBelt2 = createBelt(Vec2(0.0f, 140.0f + 64.0f));
+	m_iconStringBelt3 = createBelt(Vec2(0.0f, 140.0f + 64.0f * 2.0f));
 
-	/*std::string msg = m_document["magyar"].GetString();
-	msg += "{bird}{close} Hi!{bird}";
-	msg += " ";
-	msg += m_document["computer"].GetString();
-	msg += " ";
-	msg += m_document["hello"].GetString();*/
+	//Icon* pI = nullptr;
+	//for (int i = 0; i < m_iconStringBelt2->iconArr.size(); i++) {
+	//	pI = m_iconStringBelt2->iconArr.at(i);
+	//	if (pI) {
+	//		pI->pSprite->setVisible(false);
+	//	}
+	//}
 
-	std::string msg = "";
-	const rapidjson::Value& doc = m_document;
-	for (rapidjson::Value::ConstMemberIterator iter = doc.MemberBegin(); iter != doc.MemberEnd(); ++iter) {
-		std::string name = iter->name.GetString();
-		std::string text = iter->value.GetString();
-		cocos2d::log("** name : text => %s : %s", name.c_str(), text.c_str());
-		m_phrases.push_back(text);
-		msg += text;
-		msg += " ";
-	}
-
-	std::string matchPhrase = m_document["thank you very much!"].GetString();
-	cocos2d::log("matchPhrase : %s", matchPhrase.c_str());
-
-	for (std::string s : m_phrases) {
-		cocos2d::log("m_phrases : %s", s.c_str());
-	}
-
-	m_iconStringBelt1->spawn(m_iconLetters, msg, Vec2(0.0f, 140.0f), this, 200);
-
-	for (Icon* pIcon : m_iconStringBelt1->iconArr) {
-		if (pIcon) {
-			addChild(pIcon->pSprite, 200);
-		}
-	}
+	//Icon* pI2 = nullptr;
+	//for (int i = 0; i < m_iconStringBelt3->iconArr.size(); i++) {
+	//	pI2 = m_iconStringBelt3->iconArr.at(i);
+	//	if (pI2) {
+	//		pI2->pSprite->setVisible(false);
+	//	}
+	//}
 
 	// Useful for the questions at the top of screen.
 	m_iconStringQuestion = IconString::create();
@@ -908,10 +896,10 @@ void GameScene::update(float dt)
 	Vec2 origin = Director::getInstance()->getVisibleOrigin();
 	Size visibleSize = Director::getInstance()->getVisibleSize();
 
-	if (m_pSpriteLazer->getScaleY() >= (visibleSize.height * (1.0f / 8.0f) *  0.75f)) // 90% of full  size
-		bShake = true;
+	//if (m_pSpriteLazer->getScaleY() >= (visibleSize.height * (1.0f / 8.0f) *  0.75f)) // 90% of full  size
+	//	bShake = true;
 
-	shakeTheWorld(bShake);
+	//shakeTheWorld(bShake);
 
 	//	pEntityManager->process();
 
@@ -934,19 +922,13 @@ void GameScene::update(float dt)
 	// move the boat (up and down, rotate a little)
 	float dy = cos((m_seq + 40.0f)*0.1f) * 6.0f;
 	m_pSpriteBoat->setPosition(Vec2(visibleSize.width*0.2f, visibleSize.height*0.5f + 256 * 0.5f - 96 * 0.5f + dy));
-
-	//float rnd = -5.0f + rand() % 11;
 	float dr = cos((m_seq + 20.0f)*0.1f) * 8.0f;
 	m_pSpriteBoat->setRotation(dr);
 
-	// Now destroy our icon string
-	//if (m_cyc == 5 * 60) {
-	//	cocos2d::log("m_iconStringBonjour.use_count() : %d", m_iconStringBonjour.use_count());
-	//	m_iconStringBonjour.reset();
-	//	cocos2d::log("m_iconStringBonjour.use_count() : %d", m_iconStringBonjour.use_count());
-	//}
-
+	// process conveyor belts
 	processPositionIconStringToWave(m_iconStringBelt1, 0);
+	processPositionIconStringToWave(m_iconStringBelt2, 1);
+	processPositionIconStringToWave(m_iconStringBelt3, 2);
 
 	if (!m_bShout) {
 		// upddate light beam's position based on boat's position.
@@ -967,14 +949,19 @@ void GameScene::update(float dt)
 					//m_stateUpdate = 2;
 					idWordCurrent = idWord;
 					int prevSize = m_iconStringAnswer->iconArr.size();
-					appendTextToIconString(m_iconStringAnswer, m_iconLetters, word, Vec2(m_pPolygonLine->getPosition().x - 32.0f, visibleSize.height * 0.5f), this, 200);
+					appendTextToIconString(m_iconStringAnswer, m_iconLetters, word,
+						Vec2(m_pPolygonLine->getPosition().x - 32.0f, visibleSize.height * 0.5f), this, 200);
 				}
 			}
 		}
 
+		// make light beam shine on a word
 		processLightBeamIconStringWord(m_pPolygonLine, m_iconStringBelt1);
+		//processLightBeamIconStringWord(m_pPolygonLine, m_iconStringBelt2);
+		//processLightBeamIconStringWord(m_pPolygonLine, m_iconStringBelt3);
 	}
 
+	// position question & answer to anchor / light-beam
 	Vec2 P = m_pPolygonLine->getPosition();
 	P.y = P.y - 10.0f*25.0f;// m_pPolygonLine->getContentSize().height;
 	processPositionIconStringToPos(m_iconStringQuestion, P);
@@ -1353,7 +1340,7 @@ std::vector<Icon*> GameScene::createIconArrFromString(const std::string& text) {
 	Label* pLabel = nullptr;
 	// Create a label with given font
 	//TTFConfig config("fonts/Good Unicorn - TTF.ttf", 64.0f);
-	TTFConfig config("fonts/PressStart2P.ttf", 24.0f);
+	TTFConfig config("fonts/PressStart2P.ttf", 24.0f);//30.0f);//24.0f);//usa
 	std::vector<std::string> sArr;
 	size_t size = text.size();
 	if (size <= 0) { return iconArr; }
@@ -1392,11 +1379,11 @@ std::vector<Icon*> GameScene::createIconArrFromString(const std::string& text) {
 
 			// create sprite from this label
 			pSprite = createSpriteFromLabel(pLabel);
-			pSprite->setScale(0.6f);
+			//pSprite->setScale(0.6f);
 			P.x += pSprite->getContentSize().width * pSprite->getScale();
 			//P.y += 5.0f;
 			pSprite->setPosition(P);
-			pSprite->setRotation(45.0f - rand() % 90);
+			//pSprite->setRotation(45.0f - rand() % 90);
 
 			pIcon = Icon::create(sArr[i], pSprite, Vec2(visibleSize.width*0.5f, visibleSize.height*0.5f));
 
@@ -1477,7 +1464,6 @@ void GameScene::processPositionIconStringToWave(std::shared_ptr<IconString> icon
 	Vec2 P;
 	for (Icon* pIcon : iconString->iconArr) {
 		P = pIcon->pos;
-
 		P.x -= 4 - waveIdx;
 		// TODO: wrap-around should be based on the total length of text icon string, but will change dynamically
 		if (P.x < -256.0f) {
@@ -1488,22 +1474,6 @@ void GameScene::processPositionIconStringToWave(std::shared_ptr<IconString> icon
 		pIcon->pos = P;
 		pIcon->pSprite->setPosition(P);
 	}
-
-	//// debug for reference // TODO: delete later
-	//for (int j = 0; j < 3; j++) {
-	//	for (int i = 0; i < 6; i++) {
-	//		if (waveSpr[j][i] != nullptr) {
-	//			Vec2 pos = waveSpr[j][i]->getPosition();
-	//			waveSpr[j][i]->setPosition(Vec2(visibleSize.width*0.5f + (i - 2) * 256 + wavePos[j].x,
-	//				visibleSize.height*0.5f + wavePos[j].y));
-	//		}
-	//	}
-	//	wavePos[j].x -= 4 - j;
-	//	if (wavePos[j].x < -256.0f) {
-	//		wavePos[j].x += 256.0f;
-	//	}
-	//	wavePos[j].y = cos((m_seq + j*20.0f)*0.05f) * 4.0f;
-	//}
 }
 
 void GameScene::processPositionIconStringToPos(std::shared_ptr<IconString> iconString, Vec2 pos, Vec2 offset) {
@@ -1518,6 +1488,107 @@ void GameScene::processPositionIconStringToPos(std::shared_ptr<IconString> iconS
 	}
 }
 
+//void GameScene::processLightBeamIconStringWord(DrawNode* m_pLightBeam, std::shared_ptr<IconString> iconString) {
+//	// find word
+//	Vec2 T = m_pPolygonLine->getPosition();
+//	Vec2 P;
+//	float d = 0.0f;
+//	Icon* pIcon = nullptr;
+//	Icon* pIconFound = nullptr;
+//	Icon* pIconFirst = nullptr;
+//	Icon* pIconLast = nullptr;
+//	int idxFound = -1;
+//
+//	// finds the first icon (letter) and then  anything on the RHS
+//	for (int i = 0; i < m_iconStringBelt1->iconArr.size(); i++) {
+//		pIcon = m_iconStringBelt1->iconArr.at(i);
+//		if (pIconFound != nullptr) {
+//			// founc a matching letter for this word
+//			if (pIcon->idWord == pIconFound->idWord) {
+//				//pIcon->pSprite->setOpacity(128);
+//				pIconLast = pIcon;
+//			}
+//			else {
+//				break;
+//			}
+//		}
+//		else {
+//			P = pIcon->pos;
+//			d = fabs(T.x - P.x);
+//			if (d < 16.0f) {
+//				//pIcon->pSprite->setOpacity(128);
+//				pIconFound = pIcon;
+//				idxFound = i;
+//				//cocos2d::log("pIconFound->idWord : %d", pIconFound->idWord);
+//			}
+//		}
+//	}
+//
+//	// now anything on the LHS (may not need this check, but just to make sure, depends on game style)
+//	for (int i = idxFound; i >= 0; i--) {
+//		pIcon = m_iconStringBelt1->iconArr.at(i);
+//		if (pIconFound != nullptr) {
+//			// founc a matching letter for this word
+//			if (pIcon->idWord == pIconFound->idWord) {
+//				//pIcon->pSprite->setOpacity(128);
+//				pIconFirst = pIcon;
+//			}
+//			else {
+//				break;
+//			}
+//		}
+//	}
+//
+//	// calculate and update the light beam onto this word
+//	if (pIconFirst != nullptr && pIconLast != nullptr) {
+//		// draw light beam on full!
+//		float paddingBottom = 12.0f;
+//		float paddingLeftRight = 12.0f;
+//		Vec2 leftPos = pIconFirst->pSprite->getPosition();
+//		Vec2 rightPos = pIconLast->pSprite->getPosition();
+//		leftPos.x = T.x - leftPos.x + paddingLeftRight;
+//		rightPos.x = T.x - rightPos.x - paddingLeftRight;
+//		leftPos.y = m_pSpriteBoat->getPosition().y - leftPos.y + paddingBottom;
+//		rightPos.y = m_pSpriteBoat->getPosition().y - rightPos.y + paddingBottom;
+//		Point vertices[4] = { Vec2(0, 0), Vec2(rightPos.x, leftPos.y), Vec2(leftPos.x, rightPos.y), Vec2(0, 0) };
+//		m_pPolygon->clear();
+//		m_pPolygon->drawPolygon(vertices, 4, Color4F(1, 1, 0, 0.6f), 1, Color4F(0, 0, 0, 0));
+//		m_pPolygon->setPosition(m_pSpriteBoat->getPosition());
+//		m_pPolygon->setRotation(180.0f);
+//	}
+//	else {
+//		// draw light beam!
+//		//Point vertices[4] = { Vec2(0, 0), Vec2(-15, 220), Vec2(15, 220), Vec2(0, 0) };
+//		//m_pPolygon->clear();
+//		//m_pPolygon->drawPolygon(vertices, 4, Color4F(1, 1, 0, 0.5f), 1, Color4F(0, 0, 0, 0)); // was 0.6f
+//		//m_pPolygon->setPosition(m_pSpriteBoat->getPosition());
+//		//m_pPolygon->setRotation(180.0f);
+//	}
+//}
+//
+//int GameScene::getLightBeamIconStringWord(DrawNode* m_pLightBeam, std::shared_ptr<IconString> iconString) {
+//	// find word
+//	Vec2 T = m_pPolygonLine->getPosition();
+//	Vec2 P;
+//	float d = 0.0f;
+//	Icon* pIcon = nullptr;
+//	int idWord = -1;
+//
+//	// finds the first icon (letter) and then returns the idWord of that icon
+//	for (int i = 0; i < m_iconStringBelt1->iconArr.size(); i++) {
+//		pIcon = m_iconStringBelt1->iconArr.at(i);
+//		P = pIcon->pos;
+//		d = fabs(T.x - P.x);
+//		if (d < 16.0f) {
+//			idWord = pIcon->idWord;
+//			//cocos2d::log("getLightBeamIconStringWord : idWord : %d", idWord);
+//			break;
+//		}
+//	}
+//
+//	return idWord;
+//}
+
 void GameScene::processLightBeamIconStringWord(DrawNode* m_pLightBeam, std::shared_ptr<IconString> iconString) {
 	// find word
 	Vec2 T = m_pPolygonLine->getPosition();
@@ -1525,75 +1596,56 @@ void GameScene::processLightBeamIconStringWord(DrawNode* m_pLightBeam, std::shar
 	float d = 0.0f;
 	Icon* pIcon = nullptr;
 	Icon* pIconFound = nullptr;
-	Icon* pIconFirst = nullptr;
-	Icon* pIconLast = nullptr;
 	int idxFound = -1;
+	float x = 0.0f;
+	float width = 0.0f;
+	float scale = 1.0f;
 
 	// finds the first icon (letter) and then  anything on the RHS
-	for (int i = 0; i < m_iconStringBelt1->iconArr.size(); i++) {
-		pIcon = m_iconStringBelt1->iconArr.at(i);
-		if (pIconFound != nullptr) {
-			// founc a matching letter for this word
-			if (pIcon->idWord == pIconFound->idWord) {
-				//pIcon->pSprite->setOpacity(128);
-				pIconLast = pIcon;
-			}
-			else {
-				break;
-			}
-		}
-		else {
-			P = pIcon->pos;
-			d = fabs(T.x - P.x);
-			if (d < 16.0f) {
-				//pIcon->pSprite->setOpacity(128);
-				pIconFound = pIcon;
-				idxFound = i;
-				//cocos2d::log("pIconFound->idWord : %d", pIconFound->idWord);
-			}
-		}
-	}
-
-	// now anything on the LHS (may not need this check, but just to make sure, depends on game style)
-	for (int i = idxFound; i >= 0; i--) {
-		pIcon = m_iconStringBelt1->iconArr.at(i);
-		if (pIconFound != nullptr) {
-			// founc a matching letter for this word
-			if (pIcon->idWord == pIconFound->idWord) {
-				//pIcon->pSprite->setOpacity(128);
-				pIconFirst = pIcon;
-			}
-			else {
-				break;
-			}
+	for (int i = 0; i < iconString->iconArr.size(); i++) {
+		pIcon = iconString->iconArr.at(i);
+		P = pIcon->pSprite->getPosition();
+		width = pIcon->pSprite->getContentSize().width;
+		scale = pIcon->pSprite->getScale();
+		d = fabs(T.x - P.x);
+		if (d < width * scale * 0.5f) {
+			//pIcon->pSprite->setOpacity(128);
+			pIconFound = pIcon;
+			idxFound = i;
+			//cocos2d::log("pIconFound->idWord : %d", pIconFound->idWord);
+			break;
 		}
 	}
 
 	// calculate and update the light beam onto this word
-	if (pIconFirst != nullptr && pIconLast != nullptr) {
+	if (pIconFound != nullptr) {
 		// draw light beam on full!
 		float paddingBottom = 12.0f;
-		float paddingLeftRight = 12.0f;
-		Vec2 leftPos = pIconFirst->pSprite->getPosition();
-		Vec2 rightPos = pIconLast->pSprite->getPosition();
-		leftPos.x = T.x - leftPos.x + paddingLeftRight;
-		rightPos.x = T.x - rightPos.x - paddingLeftRight;
+		float paddingLeftRight = 4.0f;
+		float x = pIcon->pSprite->getPosition().x;
+		Vec2 leftPos = pIcon->pSprite->getPosition();
+		Vec2 rightPos = pIcon->pSprite->getPosition();
+
+		leftPos.x = T.x - leftPos.x + (width * scale * 0.5f + paddingLeftRight);
+		rightPos.x = T.x - rightPos.x - (width * scale * 0.5f + paddingLeftRight);
 		leftPos.y = m_pSpriteBoat->getPosition().y - leftPos.y + paddingBottom;
 		rightPos.y = m_pSpriteBoat->getPosition().y - rightPos.y + paddingBottom;
+
 		Point vertices[4] = { Vec2(0, 0), Vec2(rightPos.x, leftPos.y), Vec2(leftPos.x, rightPos.y), Vec2(0, 0) };
+
 		m_pPolygon->clear();
 		m_pPolygon->drawPolygon(vertices, 4, Color4F(1, 1, 0, 0.6f), 1, Color4F(0, 0, 0, 0));
 		m_pPolygon->setPosition(m_pSpriteBoat->getPosition());
 		m_pPolygon->setRotation(180.0f);
 	}
-	else {
+	//else {
 		// draw light beam!
 		//Point vertices[4] = { Vec2(0, 0), Vec2(-15, 220), Vec2(15, 220), Vec2(0, 0) };
 		//m_pPolygon->clear();
 		//m_pPolygon->drawPolygon(vertices, 4, Color4F(1, 1, 0, 0.5f), 1, Color4F(0, 0, 0, 0)); // was 0.6f
 		//m_pPolygon->setPosition(m_pSpriteBoat->getPosition());
 		//m_pPolygon->setRotation(180.0f);
-	}
+	//}
 }
 
 int GameScene::getLightBeamIconStringWord(DrawNode* m_pLightBeam, std::shared_ptr<IconString> iconString) {
@@ -1611,7 +1663,7 @@ int GameScene::getLightBeamIconStringWord(DrawNode* m_pLightBeam, std::shared_pt
 		d = fabs(T.x - P.x);
 		if (d < 16.0f) {
 			idWord = pIcon->idWord;
-			cocos2d::log("getLightBeamIconStringWord : idWord : %d", idWord);
+			//cocos2d::log("getLightBeamIconStringWord : idWord : %d", idWord);
 			break;
 		}
 	}
@@ -1620,7 +1672,7 @@ int GameScene::getLightBeamIconStringWord(DrawNode* m_pLightBeam, std::shared_pt
 }
 
 void GameScene::appendTextToIconString(std::shared_ptr<IconString> iconString, std::vector<Icon*> icons, const std::string text, Vec2 P, Scene* pSceneParent, int localZOrder) {
-	float endPos = iconString->getwidth() ? iconString->getwidth() + 24.0f : 0.0f;
+	float endPos = iconString->getwidth() ? iconString->getwidth() + 60.0f * iconString->getScale() : 0.0f;
 	int size = iconString->iconArr.size();
 	iconString->spawn(m_iconLetters, text, Vec2(P.x + endPos, P.y), this, 200);
 	Icon *pI = nullptr;
@@ -1636,13 +1688,11 @@ void GameScene::appendTextToIconString(std::shared_ptr<IconString> iconString, s
 std::string GameScene::getRandomStringFromDocument(const rapidjson::Document& doc) {
 	rapidjson::SizeType size = doc.MemberCount();
 	int randIdx = rand() % size;
-	cocos2d::log("getRandomStringFromDocument : randIdx : %d", randIdx);
 	int i = 0;
 	for (rapidjson::Value::ConstMemberIterator iter = doc.MemberBegin(); iter != doc.MemberEnd(); ++iter) {
 		if (i == randIdx) {
 			std::string name = iter->name.GetString();
-			std::string text = iter->value.GetString();
-			cocos2d::log("getRandomStringFromDocument : name : text => %s : %s", name.c_str(), text.c_str());
+			//std::string text = iter->value.GetString();
 			return name;
 		}
 		i++;
@@ -1667,6 +1717,32 @@ void GameScene::iconsRelease(std::vector<Icon*> icons) {
 			}
 		}
 	}
+}
+
+std::shared_ptr<IconString> GameScene::createBelt(Vec2 pos) {
+	std::shared_ptr<IconString> iconString = IconString::create();
+	iconString->setScale(0.5f);
+
+	std::string msg = "";
+	const rapidjson::Value& doc = m_document;
+	for (rapidjson::Value::ConstMemberIterator iter = doc.MemberBegin(); iter != doc.MemberEnd(); ++iter) {
+		std::string name = iter->name.GetString();
+		std::string text = iter->value.GetString();
+		//cocos2d::log("** name : text => %s : %s", name.c_str(), text.c_str());
+		//m_phrases.push_back(text);
+		msg += text;
+		msg += " ";
+	}
+
+	iconString->spawn(m_iconLetters, msg, pos, this, 200);
+
+	for (Icon* pIcon : iconString->iconArr) {
+		if (pIcon) {
+			addChild(pIcon->pSprite, 200);
+		}
+	}
+
+	return iconString;
 }
 
 // ----------------------------------------------- //

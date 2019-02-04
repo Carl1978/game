@@ -99,15 +99,17 @@ std::vector<Icon*> IconString::spawn(std::vector<Icon*> icons, const std::string
 	// Create words list (NOTE: idx is the id)
 	if (m_words.size() <= 0) {
 		m_words = split(text, ' ');
+		sArr = split(text, ' ');
 		for (auto s : m_words) {
-			cocos2d::log("s : words : %s", s.c_str());
+			//	cocos2d::log("s : words : %s", s.c_str());
 		}
 	}
 	else {
 		std::vector<std::string> words;
 		words = split(text, ' ');
+		sArr = split(text, ' ');
 		for (auto s : words) {
-			cocos2d::log("s : words : append : %s", s.c_str());
+			//	cocos2d::log("s : words : append : %s", s.c_str());
 			m_words.push_back(s);
 		}
 	}
@@ -120,83 +122,89 @@ std::vector<Icon*> IconString::spawn(std::vector<Icon*> icons, const std::string
 	// special I wrote to check if we have an ASCII char or Unicode char (i.e. 2bytes)
 	// NOTE: in some cases this can be 32-bit 4bytes so may have to come back and add platform checking code here later!
 	// TODO: refactor into a nice neat helper function
-	for (int pos = 0; pos < size;)
-	{
-		unsigned int c = text.at(pos);
-		//cocos2d::log("%c, %d", c, c);
-		// single char (in ASCII range)
-		if (c < 128) {
-			if (bVar == true) { // check for variable (i.e. we are looking for a whole string for a sprite image perhaps)
-				if (c == 125) { // }
-					bVar = false;
-					sArr.push_back(sValue);
-					pos++;
-					//cocos2d::log("sValue : %s", sValue.c_str());
-					sValue = "";
-					continue;
-				}
-				else {
-					std::string s = text.substr(pos, 1);
-					sValue += s;
-				}
-			}
-			else if (c == 123) { // {
-				bVar = true;
-			}
+	//for (int pos = 0; pos < size;)
+	//{
+	//	unsigned int c = text.at(pos);
+	//	//cocos2d::log("%c, %d", c, c);
+	//	// single char (in ASCII range)
+	//	if (c < 128) {
+	//		if (bVar == true) { // check for variable (i.e. we are looking for a whole string for a sprite image perhaps)
+	//			if (c == 125) { // }
+	//				bVar = false;
+	//				sArr.push_back(sValue);
+	//				pos++;
+	//				//cocos2d::log("sValue : %s", sValue.c_str());
+	//				sValue = "";
+	//				continue;
+	//			}
+	//			else {
+	//				std::string s = text.substr(pos, 1);
+	//				sValue += s;
+	//			}
+	//		}
+	//		else if (c == 123) { // {
+	//			bVar = true;
+	//		}
 
-			if (!bVar) {
-				std::string s = text.substr(pos, 1);
-				sArr.push_back(s);
-			}
-			//cocos2d::log("s: %s", s.c_str());
-			pos++;
-		}
-		// double char needed (unicode range)
-		else {
-			std::string s = text.substr(pos, 2);
-			sArr.push_back(s);
-			//cocos2d::log("s: %s", s.c_str());
-			pos += 2;
-		}
-	}
+	//		if (!bVar) {
+	//			std::string s = text.substr(pos, 1);
+	//			sArr.push_back(s);
+	//		}
+	//		//cocos2d::log("s: %s", s.c_str());
+	//		pos++;
+	//	}
+	//	// double char needed (unicode range)
+	//	else {
+	//		std::string s = text.substr(pos, 2);
+	//		sArr.push_back(s);
+	//		//cocos2d::log("s: %s", s.c_str());
+	//		pos += 2;
+	//	}
+	//}
 
 	auto visibleSize = Director::getInstance()->getVisibleSize();
 	Vec2 origin = Director::getInstance()->getVisibleOrigin();
+	float prevWidth = 0.0f;
+	//for (int i = 0; i < sArr.size(); i++) {
+		//if (sArr[i].at(0) != 32) { // check we have a valid char (not space " " char)
 	for (int i = 0; i < sArr.size(); i++) {
-		if (sArr[i].at(0) != 32) { // check we have a valid char (not space " " char)
+		//if (m_words.at(i) != " ") { // check we have a valid char (not space " " char)
 			// create sprite from an element in icons array
-			int idxLetter = getIdxFromIconValue(icons, sArr[i]);
-			pSprite = Sprite::createWithTexture(icons.at(idxLetter)->pSprite->getTexture());
+			//int idxLetter = getIdxFromIconValue(icons, sArr[i]);
+			//pSprite = Sprite::createWithTexture(icons.at(idxLetter)->pSprite->getTexture());
+			//m_words
+		TTFConfig configTest("fonts/PressStart2P.ttf", 24.0f);
+		Label* pLabelTest = Label::createWithTTF(configTest, sArr[i], cocos2d::TextHAlignment::CENTER);
+		pLabelTest->setTextColor(Color4B::WHITE);
+		pLabelTest->enableOutline(Color4B::BLACK, 6);
+		pSprite = createSpriteFromLabel(pLabelTest);
 
-			// NOTE: Crash caused by idx == -1 !!!!!!!!!!!!!!!!!!!!!!!!
-			//pSprite->retain(); // NOTE: TODO: need these lines to stop it crashing! But also need to release them in dtr I think.
-			//icons.at(idxLetter)->pSprite->retain();
-			//icons.at(idxLetter)->pSprite->getTexture()->retain();
+		//pSprite = Sprite::create("boat96x96.png"); // DEBUG
+		//pSprite->setVisible(false);//usausa
+		pSprite->setScale(this->scale);
+		P.x += (prevWidth + pSprite->getContentSize().width) * 0.5f * pSprite->getScaleX();
+		pSprite->setPosition(P);
+		prevWidth = pSprite->getContentSize().width;
+		//pSprite->setRotation(45.0f - rand() % 90);
 
-			//pSprite = Sprite::createWithTexture(icons.at(0)->pSprite->getTexture()); // DEBUG
-			//pSprite = Sprite::create("boat96x96.png"); // DEBUG
-			pSprite->setScale(this->scale);
-			pSprite->setPosition(P);
-			P.x += pSprite->getContentSize().width * pSprite->getScaleX();
-			//pSprite->setRotation(45.0f - rand() % 90);
+		//pIcon = Icon::create(icons.at(idxLetter)->value, pSprite, P);
+		pIcon = Icon::create(sArr[i], pSprite, P);
+		pIcon->idWord = IconString::idWord;
+		pIcon->id = IconString::idIcon;
+		IconString::idIcon++;
 
-			pIcon = Icon::create(icons.at(idxLetter)->value, pSprite, P);
-			pIcon->idWord = IconString::idWord;
-			pIcon->id = IconString::idIcon;
-			IconString::idIcon++;
-
-			iconArr.push_back(pIcon);
-		}
-		else {
+		iconArr.push_back(pIcon);
+		//}
+		//else {
 			// for now assume space chars are equal to this width
-			P.x += 30.0f * this->scale;
-			IconString::idWord++; // ready for next word
-		}
+		P.x += 60.0f * this->scale;
+		IconString::idWord++; // ready for next word
+	//}
 	}
 
 	// set the current total width of this icon string
 	width = getwidth();
-	cocos2d::log("IconString :: width : %f", width);
+	//cocos2d::log("IconString :: width : %f", width);
 
 	return iconArr;
 }
@@ -247,10 +255,10 @@ float IconString::getwidth(void) {
 			if (pIcon) {
 				x = pIcon->pSprite->getPosition().x;
 				if (smallest < 0 || smallest > x) {
-					smallest = x;
+					smallest = x - pIcon->pSprite->getContentSize().width * pIcon->pSprite->getScale() * 0.5f;
 				}
 				if (biggest < 0 || biggest < x) {
-					biggest = x;
+					biggest = x + pIcon->pSprite->getContentSize().width * pIcon->pSprite->getScale() * 0.5f;
 				}
 			}
 		}
@@ -285,6 +293,58 @@ std::vector<std::string> IconString::split(const std::string& s, char delimiter)
 		tokens.push_back(token);
 	}
 	return tokens;
+}
+
+Sprite* IconString::createSpriteFromLabel(Label* pLabel) {
+	if (pLabel == nullptr) { return nullptr; }
+
+	Size pixelSize = Director::getInstance()->getWinSizeInPixels();
+	auto visibleSize = Director::getInstance()->getVisibleSize();
+	Size letterSize = pLabel->getContentSize() + Size(pLabel->getOutlineSize()*2.0f, pLabel->getOutlineSize()*2.0f);
+	Vec2 labelPrevPos = pLabel->getPosition();
+	float labelPrevScaleY = pLabel->getScaleY();
+	RenderTexture* pRenderTexture;
+	Sprite* pSprite = nullptr;
+	Sprite* pSpriteContainer = Sprite::create();
+
+	pRenderTexture = RenderTexture::create(letterSize.width, letterSize.height, Texture2D::PixelFormat::RGBA8888);
+	pRenderTexture->retain();
+	pRenderTexture->setKeepMatrix(true);
+	pRenderTexture->setVirtualViewport(Vec2(0, 0),
+		Rect(0, 0, visibleSize.width, visibleSize.height),
+		Rect(0, 0, pixelSize.width, pixelSize.height));
+
+	pSpriteContainer->addChild(pLabel, 0);
+	pLabel->setPosition(Vec2(letterSize.width*0.5f, letterSize.height*0.5f));
+	pLabel->setScaleY(-1.0f);
+
+	pRenderTexture->beginWithClear(1, 1, 1, 0);
+	pSpriteContainer->visit();
+	pRenderTexture->end();
+	//pRenderTexture->saveToFile("test.png", Image::Format::PNG);
+
+	pLabel->setScaleY(labelPrevScaleY);
+	pLabel->setPosition(labelPrevPos);
+	pSpriteContainer->removeChild(pLabel, false);
+
+	pSprite = Sprite::createWithTexture(pRenderTexture->getSprite()->getTexture());
+	pSprite->retain();
+	//pRenderTexture->retain(); // NOTE: the below comment retains made it slow down alot each time I clicked the restart button in app!!!
+	//pRenderTexture->getSprite()->retain();
+	//pRenderTexture->getSprite()->getTexture()->retain();
+	//usa
+	//pSprite = Sprite::create();
+	//pSprite->setTexture("button-close64x64.png");
+	//pSprite = Sprite::create("button-close64x64.png");
+	//pSprite->getTexture()->retain();//usa
+	//pSprite->initWithTexture(pRenderTexture->getSprite()->getTexture());
+	//pSprite->createWithSpriteFrame(pRenderTexture->getSprite()->getSpriteFrame());
+
+	pRenderTexture->release();
+
+	pSprite->setContentSize(letterSize);
+
+	return pSprite;
 }
 
 // TODO: words should fade in and fade out at the end of the screen LHS & RHS

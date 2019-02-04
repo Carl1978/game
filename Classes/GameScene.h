@@ -100,6 +100,7 @@ public:
 	std::string getRandomStringFromDocument(const rapidjson::Document& doc);
 	void updateScore(int newScore);
 	void iconsRelease(std::vector<Icon*> icons);
+	std::shared_ptr<IconString> createBelt(Vec2 pos = Vec2(0.0f, 140.0f));
 
 	// a selector callback
 	void menuCloseCallback(Ref* pSender);

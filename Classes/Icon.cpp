@@ -12,7 +12,7 @@ USING_NS_CC;
 
 Icon::Icon() : Entity() {
 	// TODO:
-	cocos2d::log("Icon ctr...");
+//	cocos2d::log("Icon ctr...");
 	// TOOD: use id from Entity
 }
 
@@ -30,7 +30,7 @@ Sprite* Icon::spawn(const std::string filename, Vec2 P) {
 	pSprite->setPosition(P);
 	type = "Icon";
 	value = "";
-	cocos2d::log("Icon::spawn()...");
+	//	cocos2d::log("Icon::spawn()...");
 	return pSprite;
 }
 
@@ -44,7 +44,7 @@ Sprite* Icon::spawn(const std::string& val, Sprite* pSpr, Vec2 P) {
 	}
 	type = "Icon";
 	value = val;
-	cocos2d::log("Icon::spawn()...");
+	//	cocos2d::log("Icon::spawn()...");
 
 	return pSprite;
 }
