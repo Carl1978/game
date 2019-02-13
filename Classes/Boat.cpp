@@ -11,21 +11,19 @@
 USING_NS_CC;
 
 Boat::Boat() : Entity() {
-	// TODO:
-	cocos2d::log("Boat ctr...");
+	//cocos2d::log("Boat ctr...");
 }
 
 Boat::~Boat()
 {
-	// TODO:
-	cocos2d::log("Boat dtr...");
+	//cocos2d::log("Boat dtr...");
 }
 
 Sprite* Boat::spawn(const std::string filename, Vec2 P) {
 	Entity::spawn(P);
 
 	pSprite = Sprite::create(filename);
-	pos = P;
+	pos = startPos = P;
 	pSprite->setPosition(P);
 	type = "Boat";
 	cocos2d::log("Boat::spawn()...");
@@ -47,7 +45,16 @@ void Boat::deinit(void) {
 }
 
 void Boat::process(void) {
-	// TODO:
+	float dy = cos((seq + 40.0f) * 0.1f) * 6.0f;
+	float dr = cos((seq + 20.0f) * 0.1f) * 8.0f;
+
+	pos = startPos;
+	pos.y += dy;
+	pSprite->setPosition(pos);
+	pSprite->setRotation(dr);
+
+	cyc++;
+	seq++;
 }
 
 void Boat::draw(void) {

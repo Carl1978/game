@@ -17,6 +17,8 @@ USING_NS_CC;
 
 class Boat : public Entity {
 public:
+	Vec2 startPos;
+
 	Boat();
 	~Boat();
 	void init(void);

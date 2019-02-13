@@ -8,6 +8,7 @@
 #include "Letter.h"
 #include "Floor.h"
 #include "Boat.h"
+#include "Wave.h"
 #include "Icon.h"
 #include "IconString.h"
 
@@ -17,12 +18,17 @@ using namespace rapidjson;
 class GameScene : public cocos2d::Scene
 {
 public:
+	//#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
+	static float currentVolume;
+	//#endif
 	GameScene();
 	~GameScene();
 	static cocos2d::Scene* createScene();
 
 	rapidjson::Document m_documentLetters;
 	rapidjson::Document m_document;
+
+	Label* micLabel;
 
 	Entity* pEntity;
 	EntityManager* pEntityManager;
@@ -65,6 +71,8 @@ public:
 	std::shared_ptr<Boat> m_boatArr[4];
 	std::shared_ptr<Boat>* m_pBoatArr;
 
+	std::vector<Wave*> m_pWaveArr;
+
 	Icon* m_pIconB;
 	std::shared_ptr<Icon> m_iconArr[7];
 
@@ -92,7 +100,7 @@ public:
 	std::vector<Icon*> createIconArrFromString(const std::string& text);
 	rapidjson::Document parseJSON(const std::string& filename);
 	int getIdxFromIconValue(std::vector<Icon*> iconLetters, const std::string value);
-	void processPositionIconStringToWave(std::shared_ptr<IconString> iconString, int waveIdx = 0);
+	void processPositionIconStringToWave(std::shared_ptr<IconString> iconString, Wave* pWave = nullptr);
 	void processPositionIconStringToPos(std::shared_ptr<IconString> iconString, Vec2 pos, Vec2 offset = Vec2::ZERO);
 	void processLightBeamIconStringWord(DrawNode* m_pLightBeam, std::shared_ptr<IconString> iconString);
 	int getLightBeamIconStringWord(DrawNode* m_pLightBeam, std::shared_ptr<IconString> iconString);
@@ -101,6 +109,7 @@ public:
 	void updateScore(int newScore);
 	void iconsRelease(std::vector<Icon*> icons);
 	std::shared_ptr<IconString> createBelt(Vec2 pos = Vec2(0.0f, 140.0f));
+	void processShout(float volume);
 
 	// a selector callback
 	void menuCloseCallback(Ref* pSender);
