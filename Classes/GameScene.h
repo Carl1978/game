@@ -21,6 +21,8 @@ public:
 	//#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
 	static float currentVolume;
 	//#endif
+	bool m_bTouchVolume;
+
 	GameScene();
 	~GameScene();
 	static cocos2d::Scene* createScene();
@@ -110,6 +112,9 @@ public:
 	void iconsRelease(std::vector<Icon*> icons);
 	std::shared_ptr<IconString> createBelt(Vec2 pos = Vec2(0.0f, 140.0f));
 	void processShout(float volume);
+	std::vector<std::string> split(const std::string& s, char delimiter);
+	int doStringsMatch(const std::string& str1, const std::string& str2);
+	void createNewQuestion(void);
 
 	// a selector callback
 	void menuCloseCallback(Ref* pSender);

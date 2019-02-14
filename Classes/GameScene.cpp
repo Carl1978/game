@@ -859,14 +859,16 @@ void GameScene::update(float dt)
 
 	//float volumeHeight = (GameScene::currentVolume / 4000.0f) * 256;
 
-	if (m_stateUpdate == 0) {
-		if (GameScene::currentVolume > 100.0f) {
-			processShout(GameScene::currentVolume);
+	if (!m_bTouchVolume) {
+		if (m_stateUpdate == 0) {
+			if (GameScene::currentVolume > 100.0f) {
+				processShout(GameScene::currentVolume);
+			}
 		}
-	}
-	else if (m_stateUpdate == 1) {
-		if (GameScene::currentVolume <= 100.0f) {
-			processShout(GameScene::currentVolume);
+		else if (m_stateUpdate == 1) {
+			if (GameScene::currentVolume <= 100.0f) {
+				processShout(GameScene::currentVolume);
+			}
 		}
 	}
 
@@ -924,17 +926,21 @@ void GameScene::update(float dt)
 		//m_pPolygonLine->setRotation(180.0f + m_pBoat->pSprite->getRotation() * 0.1f);
 	}
 	else {
+		cocos2d::log("GOT HERE AAA!!!");
 		int idWord = getLightBeamIconStringWord(m_pPolygonLine, m_iconStringBelt1);
 		if (idWord != -1) {
+			cocos2d::log("GOT HERE BBB!!!");
 			if (idWord != idWordCurrent) { // found a different word
 				std::string word = m_iconStringBelt1->m_words.at(idWord);
-				if (m_stateUpdate == 1) {
+				cocos2d::log("GOT HERE 1ST!!!");
+				//if (m_stateUpdate == 1) {
 					//m_stateUpdate = 2;
-					idWordCurrent = idWord;
-					int prevSize = m_iconStringAnswer->iconArr.size();
-					appendTextToIconString(m_iconStringAnswer, m_iconLetters, word,
-						Vec2(m_pPolygonLine->getPosition().x - 32.0f, visibleSize.height * 0.5f), this, 200);
-				}
+				idWordCurrent = idWord;
+				cocos2d::log("GOT HERE!!!");
+				int prevSize = m_iconStringAnswer->iconArr.size();
+				appendTextToIconString(m_iconStringAnswer, m_iconLetters, word,
+					Vec2(m_pPolygonLine->getPosition().x - 32.0f, visibleSize.height * 0.5f), this, 200);
+				//}
 			}
 		}
 
@@ -998,7 +1004,7 @@ void GameScene::processShout(float volume) {
 		// slow down the waves now that we are shouting / touching the screen!
 		for (auto& wave : m_pWaveArr) {
 			if (wave != nullptr) {
-				wave->vel *= 0.5f;
+				wave->vel *= 0.75f;
 			}
 		}
 	}
@@ -1007,7 +1013,8 @@ void GameScene::processShout(float volume) {
 		m_stateUpdate = 0;
 
 		// check if we have the correct answer? i.e. matching phrase between the answer icon string
-		Size visibleSize = Director::getInstance()->getVisibleSize();
+		m_phraseKey = "";
+		m_phraseVal = "";
 
 		// create the phrase key
 		cocos2d::log("m_iconStringQuestion->m_words.size() : %d", m_iconStringQuestion->m_words.size());
@@ -1035,50 +1042,27 @@ void GameScene::processShout(float volume) {
 		std::string value = m_document[m_phraseKey.c_str()].GetString();
 		cocos2d::log("value : %s", value.c_str());
 
-		if (m_phraseVal == value) {
-			cocos2d::log("Correct Answer!!! :)");
-			updateScore(++score);
-		}
-		else {
+		// check if we have a partial match?
+		int result = doStringsMatch(value, m_phraseVal);
+
+		if (result == -1) {// Failed - no match!
+			cocos2d::log("doStringsMatch :: Failed == -1");
 			cocos2d::log("Wrong Answer! :(");
 			if (score > 0) score--;
 			updateScore(score);
+			createNewQuestion();
 		}
-
-		m_phraseKey = "";
-		m_phraseVal = "";
-
-		// rebuilds up the question string
-		for (auto pIcon : m_iconStringQuestion->iconArr) {
-			if (pIcon) {
-				//delete pIcon; // NOTE: don't need to delete, handle automatically when we pop or clear the vector array
-				//pIcon = nullptr;
-				this->removeChild(pIcon->pSprite);
-			}
+		else if (result == 0) {// Success!
+			cocos2d::log("doStringsMatch :: Success == 0");
+			cocos2d::log("Correct Answer!!! :)");
+			updateScore(++score);
+			createNewQuestion();
 		}
-
-		m_iconStringQuestion->iconArr.clear();
-		m_iconStringQuestion->m_words.clear();
-		std::string question = getRandomStringFromDocument(m_document);
-		m_iconStringQuestion->spawn(m_iconLetters, question, Vec2(m_pPolygonLine->getPosition().x - 32.0f, visibleSize.height - 48.0f), this, 200);
-		for (auto pIcon : m_iconStringQuestion->iconArr) {
-			if (pIcon) {
-				pIcon->pSprite->setColor(Color3B::YELLOW);
-				addChild(pIcon->pSprite, 200);
-			}
+		else if (result > 0) {// Partial success, where result value is how many matches so far with the phrase answer value
+			cocos2d::log("doStringsMatch :: Partial > 0");
+			//m_iconStringAnswer->iconArr.clear();
+			//m_iconStringAnswer->m_words.clear();
 		}
-
-		// rebuilds up the answer string
-		for (auto pIcon : m_iconStringAnswer->iconArr) {
-			if (pIcon) {
-				//delete pIcon; // NOTE: don't need to delete, handle automatically when we pop or clear the vector array
-				//pIcon = nullptr;
-				this->removeChild(pIcon->pSprite);
-			}
-		}
-
-		m_iconStringAnswer->iconArr.clear();
-		m_iconStringAnswer->m_words.clear();
 
 		// draw light beam!
 		Point vertices[4] = { Vec2(0, 0), Vec2(-15, 220), Vec2(15, 220), Vec2(0, 0) };
@@ -1090,7 +1074,7 @@ void GameScene::processShout(float volume) {
 		// speed up the waves again!
 		for (auto& wave : m_pWaveArr) {
 			if (wave != nullptr) {
-				wave->vel *= (1.0f / 0.5f);
+				wave->vel *= (1.0f / 0.75f);
 			}
 		}
 	}
@@ -1104,6 +1088,7 @@ bool GameScene::onTouchBegan(cocos2d::Touch* touch, cocos2d::Event* event)
 	cocos2d::log("GameScene::onTouchBegan : You touched %f, %f", location.x, location.y);
 
 	if (m_stateUpdate == 0) {
+		m_bTouchVolume = true;
 		GameScene::currentVolume = 1000.0f;
 		processShout(GameScene::currentVolume);
 	}
@@ -1125,6 +1110,7 @@ void GameScene::onTouchEnded(cocos2d::Touch* touch, cocos2d::Event* event)
 	cocos2d::log("GameScene::onTouchEnded : You touched %f, %f", location.x, location.y);
 
 	if (m_stateUpdate == 1) {
+		m_bTouchVolume = false;
 		GameScene::currentVolume = 0.0f;
 		processShout(GameScene::currentVolume);
 	}
@@ -1538,15 +1524,19 @@ int GameScene::getLightBeamIconStringWord(DrawNode* m_pLightBeam, std::shared_pt
 	Icon* pIcon = nullptr;
 	int idWord = -1;
 
-	// finds the first icon (letter) and then returns the idWord of that icon
+	// finds the first icon (word) and then returns the idWord of that icon
 	for (int i = 0; i < m_iconStringBelt1->iconArr.size(); i++) {
 		pIcon = m_iconStringBelt1->iconArr.at(i);
-		P = pIcon->pos;
-		d = fabs(T.x - P.x);
-		if (d < 16.0f) {
-			idWord = pIcon->idWord;
-			//cocos2d::log("getLightBeamIconStringWord : idWord : %d", idWord);
-			break;
+		if (pIcon->state == 0) {
+			P = pIcon->pos;
+			d = fabs(T.x - P.x);
+			if (d < (pIcon->pSprite->getContentSize().width * pIcon->pSprite->getScale() * 0.5f)) {
+				idWord = pIcon->idWord;
+				//cocos2d::log("getLightBeamIconStringWord : idWord : %d", idWord);
+				pIcon->state = 1; // hit by light beam
+				pIcon->pSprite->setOpacity(128);
+				break;
+			}
 		}
 	}
 
@@ -1603,7 +1593,7 @@ void GameScene::iconsRelease(std::vector<Icon*> icons) {
 
 std::shared_ptr<IconString> GameScene::createBelt(Vec2 pos) {
 	std::shared_ptr<IconString> iconString = IconString::create();
-	iconString->setScale(0.5f);
+	iconString->setScale(0.75f);//0.5f
 
 	std::string msg = "";
 	const rapidjson::Value& doc = m_document;
@@ -1625,4 +1615,110 @@ std::shared_ptr<IconString> GameScene::createBelt(Vec2 pos) {
 	}
 
 	return iconString;
+}
+
+std::vector<std::string> GameScene::split(const std::string& s, char delimiter)
+{
+	std::vector<std::string> tokens;
+	std::string token;
+	std::istringstream tokenStream(s);
+	while (std::getline(tokenStream, token, delimiter))
+	{
+		tokens.push_back(token);
+	}
+	return tokens;
+}
+
+// checks for full and partial matches between two strings' words
+int GameScene::doStringsMatch(const std::string& str1, const std::string& str2) {
+	// Important: str1 is the true answer, and str2 is player's answer
+
+	if (str1 == str2) return 0; // Success, matched perfectly!
+
+	if (str2 == "") return 1024; // Assume an empty string partial match (i.e. do nothing for time being, act like a partial match)
+
+	// check for partial match with some of the words in phrase
+	std::vector<std::string> arr1 = split(str1, ' ');
+	std::vector<std::string> arr2 = split(str2, ' ');
+	int matchWordCount = 0;
+	int arr1Size = arr1.size();
+	int arr2Size = arr2.size();
+	bool bSameSize = arr1Size == arr2Size;
+	bool bMatchedAllWords = true;
+
+	for (int i = 0; i < arr1.size(); i++) {
+		if (i < arr2.size()) {
+			if (arr1[i] == arr2[i]) { // Match this word
+				matchWordCount++;
+			}
+			else {
+				bMatchedAllWords = false;
+			}
+		}
+	}
+
+	if (str2.size() > str1.size()) {
+		// Success, matched perfectly... But we have extra words added to end.
+		// TODO: we should show the wrong words at the end of the phrase!
+		if (bMatchedAllWords) return 0; // Success!
+		else return -1; // Failed
+	}
+
+	// Failed, no match at all with any of the words in the phrase.
+	if (matchWordCount == 0) return -1;
+
+	// Same size word arrays, but no all words match up, so finally failed!
+	if (bSameSize && (matchWordCount != arr1Size)) return -1;
+
+	// Partial match with some of the words, so carry on untill we have the same size array of words
+	return matchWordCount;
+}
+
+void GameScene::createNewQuestion(void) {
+	Size visibleSize = Director::getInstance()->getVisibleSize();
+
+	idWordCurrent = -1;
+	m_phraseKey = "";
+	m_phraseVal = "";
+
+	// rebuild up the question string
+	for (auto pIcon : m_iconStringQuestion->iconArr) {
+		if (pIcon) {
+			//delete pIcon; // NOTE: don't need to delete, handle automatically when we pop or clear the vector array
+			//pIcon = nullptr;
+			this->removeChild(pIcon->pSprite);
+		}
+	}
+
+	m_iconStringQuestion->iconArr.clear();
+	m_iconStringQuestion->m_words.clear();
+	std::string question = getRandomStringFromDocument(m_document);
+	m_iconStringQuestion->spawn(m_iconLetters, question, Vec2(m_pPolygonLine->getPosition().x - 32.0f, visibleSize.height - 48.0f), this, 200);
+	for (auto pIcon : m_iconStringQuestion->iconArr) {
+		if (pIcon) {
+			pIcon->pSprite->setColor(Color3B::YELLOW);
+			addChild(pIcon->pSprite, 200);
+		}
+	}
+
+	// rebuild up the answer string
+	for (auto pIcon : m_iconStringAnswer->iconArr) {
+		if (pIcon) {
+			//delete pIcon; // NOTE: don't need to delete, handle automatically when we pop or clear the vector array
+			//pIcon = nullptr;
+			this->removeChild(pIcon->pSprite);
+		}
+	}
+
+	m_iconStringAnswer->iconArr.clear();
+	m_iconStringAnswer->m_words.clear();
+
+	// TODO: need to add this check for the other belts eventually - Also should make them all in array of belts.
+	// rebuild up the question string
+	for (auto pIcon : m_iconStringBelt1->iconArr) {
+		if (pIcon) {
+			pIcon->state = 0;
+			if (pIcon->pSprite) pIcon->pSprite->setOpacity(255);
+		}
+	}
 }

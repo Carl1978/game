@@ -27,7 +27,7 @@ Sprite* Wave::spawn(const std::string filename, Vec2 P, int waveIdx) {
 
 	pSprite = Sprite::create(filename);
 	idx = waveIdx;
-	float maxSpeed = 4.0f;//6.0f;//4.0f;
+	float maxSpeed = 6.0f;// 4.0f;//6.0f;//4.0f;
 	vel = Vec2(maxSpeed - idx, 0.0f);
 	cocos2d::log("wave::spawn :: idx : %d", idx);
 	cocos2d::log("Wave::spawn :: vel.x : %f", vel.x);
