@@ -59,7 +59,6 @@ enum ButtonFooter {
 
 #define kFontFilePath		"fonts/arial.ttf"
 
-
 #define kViewBlackJackGame		1
 #define kViewKingsAndJacks		2
 #define kViewPatience			3
@@ -69,6 +68,7 @@ enum ButtonFooter {
 #define kViewGame				7
 #define kViewSnake				8
 #define kViewHello				9
+#define kViewMapTap				10
 
 #define kViewBackground			100
 #define kViewPanel				101
@@ -83,24 +83,3 @@ enum ButtonFooter {
 #define kViewBiomess			110
 
 #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -5,6 +5,7 @@
 #include "HelloWorldScene.h"
 #include "SnakeScene.h"
 #include "GameScene.h"
+#include "MapTapScene.h"
 
 USING_NS_CC;
 
@@ -60,6 +61,11 @@ void CGameManager::RunScene(int scene) {
 		Director::getInstance()->setDisplayStats(true);
 		break;
 		/////////////////////////////////////////////////////////////////////////////////////////////////////
+	case kViewMapTap:
+		m_pScene = MapTapScene::createScene();
+		//Director::getInstance()->setDisplayStats(true);
+		break;
+		/////////////////////////////////////////////////////////////////////////////////////////////////////
 	case kViewSnake:
 		m_pScene = SnakeScene::createScene();
 		Director::getInstance()->setDisplayStats(false);
@@ -93,6 +99,10 @@ uint32_t CGameManager::rand() {
 	return rw = rw ^ (rw >> 19) ^ t ^ (t >> 8);
 }
 
-void CGameManager::cocos2dLogVec3(char *sTitle, Vec3 *V) {
-	cocos2d::log("%s : x: %f, y: %f, z: %f", sTitle, V->x, V->y, V->z);
+void CGameManager::cocos2dLog(const char *sTitle, const Vec3& V) {
+	cocos2d::log("%s : x: %f, y: %f, z: %f", sTitle, V.x, V.y, V.z);
+}
+
+void CGameManager::cocos2dLog(const char *sTitle, const Vec2& V) {
+	cocos2d::log("%s : x: %f, y: %f", sTitle, V.x, V.y);
 }

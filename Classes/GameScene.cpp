@@ -654,6 +654,7 @@ bool GameScene::init()
 			pWave = Wave::create(filename, Vec2(visibleSize.width*0.5f + (i - 2) * 256, visibleSize.height*0.5f), j);
 			m_pWaveArr.push_back(pWave);
 			this->addChild(pWave->pSprite, 10 - j);
+			pWave->pSprite->setVisible(false);//--
 			//this->addChild(waveSpr[j][i], 10 - j);
 			// run it and repeat it forever
 			//if(i == 2)
@@ -1438,7 +1439,7 @@ void GameScene::processPositionIconStringToWave(std::shared_ptr<IconString> icon
 		if (P.x < -256.0f) {
 			P.x += (256.0f + iconString->width);
 		}
-		P.y = pIcon->startPos.y + cos((m_seq + waveIdx*20.0f)*0.05f) * 4.0f;
+		//		P.y = pIcon->startPos.y + cos((m_seq + waveIdx*20.0f)*0.05f) * 4.0f;
 
 		pIcon->pos = P;
 		pIcon->pSprite->setPosition(P);
